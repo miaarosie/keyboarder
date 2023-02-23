@@ -1,0 +1,133 @@
+@charset "UTF-8";
+
+/* -------------- BO 공지사항 관리 페이지 적용 CSS ------------------ */
+.content {
+    width : 100%;
+    height : 780px;
+}
+
+#writeNotice_btn {
+    float: right;
+    height : 100%;
+    color : white;
+    border : none;
+    width : 100px;
+}
+
+#noticeList {
+    width : 100%;
+    height : 70%;
+    padding : 0px 20px 0px 20px;
+}
+
+#noticeList_table {
+    width : 100%;
+    text-align : center;
+}
+
+#noticeList_table>thead {
+    height : 10%;
+}
+
+#noticeList_table>tbody>tr:hover {
+    cursor : pointer;
+    background-color: rgb(219, 221, 224);
+}
+
+#pagingArea {
+    align : center;
+    width: 55%;
+}
+
+#pagingArea button {
+    width : 30px;
+    height : 30px;
+}
+
+
+
+
+/* -------------- BO 공지사항 작성 페이지 적용 CSS ------------------ */
+#noticeEnrollForm>hr {
+    border-color : rgb(219, 221, 224);
+}
+
+#noticeTitle {
+    height : 70px;
+}
+
+#noticeContent {
+    height : 550px;
+    padding: 15px;
+}
+
+#title, #content {
+    width : 100%;
+    height : 100%;
+    border : none;
+    padding-left : 20px;
+    padding-right : 20px;
+    font-size : 25px;
+}
+
+#content { 
+    padding-top : 15px;
+}
+
+#noticeBtns {
+    text-align: right;
+    width : 100%;
+    padding-right: 20px;
+    padding-bottom: 20px;
+}
+
+#write_btn, #cancle_btn {
+    width : 120px;
+    height : 40px;
+    font-weight: bold;
+}
+
+#write_btn {
+    background-color : #323232;
+    color : white;
+}
+
+#cancle_btn {
+    background-color : white;
+    color : black;
+}
+
+
+/* -------------- BO 공지사항 상세조회 페이지 적용 CSS ------------------ */
+#writer, #writeDate {
+	margin-right: 15px;
+    font-size : 25px;
+    border : none;
+}
+
+#writer {
+	float: right;
+    width : 15%;
+}
+
+#writeDate {
+	float: right;
+    width : 15%;
+}
+
+#update_btn, #delete_btn {
+    border : 1px solid black;
+    width : 120px;
+    height : 40px;
+    font-weight: bold;
+}
+
+#update_btn {
+    background-color : #323232;
+    color : white;
+}
+
+#delete_btn {
+    background-color : white;
+    color : black;
+}

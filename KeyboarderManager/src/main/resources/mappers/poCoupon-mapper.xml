@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="poCouponMapper">
+
+	<resultMap id="poCouponResultMap" type="coupon">
+		<result column="COUPON_NO" property="couponNo" />
+		<result column="COUPON_NAME" property="couponName" />
+		<result column="COUPON_PRICE" property="couponPrice" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="USE_DATE" property="useDate" />
+		<result column="DUE_DATE" property="dueDate" />
+		<result column="COUPON_STMT" property="couponStmt" />
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="PAYMENT_BILL" property="paymentBill" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="ORDER_NO" property="orderNo"/>
+		<result column="ORDER_DATE" property="orderDate" />
+	</resultMap>
+	
+	
+	
+	<insert id ="insertCoupon" parameterType="coupon">
+	
+	INSERT INTO COUPON_STORE(COUPON_NO,
+							 COUPON_NAME,
+							 COUPON_PRICE,
+							 CREATE_DATE,
+							 DUE_DATE,
+							 PRODUCT_NO,
+							SELLER_NO
+							)
+		VALUES('k'||SEQ_COUPON_STORE_NO.NEXTVAL,
+		#{couponName},
+		#{couponPrice},
+		#{createDate},
+		#{dueDate},
+		#{productNo},
+		#{sellerNo}
+		)							 
+	</insert>
+	
+	<select id="showAbleCouponList" parameterType="coupon" resultMap="poCouponResultMap">
+	
+	 SELECT COUPON_NO as "COUPON_NO",
+            COUPON_NAME as "COUPON_NAME",
+            COUPON_PRICE as "COUPON_PRICE",
+            P.PRODUCT_NAME as "PRODUCT_NAME",
+            CASE WHEN COUPON_STMT = 'Y' THEN '사용가능'
+                       WHEN COUPON_STMT = 'N' THEN '사용불가'
+              	  END AS "COUPON_STMT",
+            TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE",
+            TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+            FROM COUPON_STORE S
+            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO=S.PRODUCT_NO)
+           	WHERE S.SELLER_NO=#{sellerNo}
+            <choose>
+			<when test='couponStmt == "N"'>
+				AND COUPON_STMT = 'N'
+				<if test='fromDate != null'>
+					AND CREATE_DATE BETWEEN #{fromDate} AND #{toDate}
+				</if>
+			</when>
+			<when test='couponStmt == "Y"'>
+				AND COUPON_STMT = 'Y'
+				<if test='fromDate != null'>
+					AND CREATE_DATE BETWEEN #{fromDate} AND #{toDate}
+				</if>
+			</when>
+		</choose>
+            ORDER BY COUPON_NO DESC
+	</select>
+	
+	<select id="ableCouponSearch" parameterType="coupon" resultMap="poCouponResultMap">
+	     	SELECT COUPON_NO as "COUPON_NO",
+            COUPON_NAME as "COUPON_NAME",
+            COUPON_PRICE as "COUPON_PRICE",
+            P.PRODUCT_NAME as "PRODUCT_NAME",
+            COUPON_STMT as "COUPON_STMT",
+            TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE",
+            TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+            FROM COUPON_STORE S
+            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO=S.PRODUCT_NO)
+           	WHERE S.SELLER_NO=#{sellerNo}
+			AND CREATE_DATE BETWEEN #{fromDate} AND #{toDate}
+			AND COUPON_STMT='Y'
+			ORDER BY COUPON_NO DESC
+			
+	</select>
+	
+	<select id="searchExCouponList" parameterType="coupon" resultMap="poCouponResultMap">
+	     	SELECT COUPON_NO as "COUPON_NO",
+            COUPON_NAME as "COUPON_NAME",
+            COUPON_PRICE as "COUPON_PRICE",
+            P.PRODUCT_NAME as "PRODUCT_NAME",
+            COUPON_STMT as "COUPON_STMT",
+            TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE",
+            TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+            FROM COUPON_STORE S
+            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO=S.PRODUCT_NO)
+           	WHERE S.SELLER_NO=#{sellerNo}
+			AND CREATE_DATE BETWEEN #{fromDate} AND #{toDate}
+			AND COUPON_STMT='N'
+			ORDER BY COUPON_NO DESC
+			
+		</select>
+			<select id="poCouponUsedList" parameterType="coupon" resultMap="poCouponResultMap">
+	
+			        SELECT O.ORDER_NO as "ORDER_NO",
+	            COUPON_NAME as "COUPON_NAME",
+	         P.PRODUCT_NAME as "PRODUCT_NAME",
+	         TO_CHAR(ORDER_DATE, 'YYYY-MM-DD') as "ORDER_DATE",
+	         ORDER_PRICE as "ORDER_PRICE",
+	            COUPON_PRICE as "COUPON_PRICE",
+	         T.PAYMENT_BILL as "PAYMENT_BILL"
+			FROM ORDERS O
+			JOIN PRODUCT P ON (P.PRODUCT_NO=O.PRODUCT_NO)
+			JOIN STORE_USE SU ON (SU.ORDER_NO = O.ORDER_NO)
+			JOIN COUPON_STORE C ON (C.COUPON_NO = SU.COUPON_NO)
+			JOIN PAYMENT T ON (T.ORDER_NO=O.ORDER_NO)
+			JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+			WHERE S.SELLER_NO=#{sellerNo}
+		    <if test="fromDate != null">
+		    AND ORDER_DATE BETWEEN #{fromDate} AND #{toDate}
+		    </if>
+		    ORDER BY ORDER_NO DESC
+			</select>
+			
+			<select id="searchPoCouponUsed"  parameterType="coupon" resultMap="poCouponResultMap">
+			        SELECT O.ORDER_NO as "ORDER_NO",
+	            COUPON_NAME as "COUPON_NAME",
+	         P.PRODUCT_NAME as "PRODUCT_NAME",
+	         TO_CHAR(ORDER_DATE, 'YYYY-MM-DD') as "ORDER_DATE",
+	         ORDER_PRICE as "ORDER_PRICE",
+	            COUPON_PRICE as "COUPON_PRICE",
+	         T.PAYMENT_BILL as "PAYMENT_BILL"
+			FROM ORDERS O
+			JOIN PRODUCT P ON (P.PRODUCT_NO=O.PRODUCT_NO)
+			JOIN STORE_USE SU ON (SU.ORDER_NO = O.ORDER_NO)
+			JOIN COUPON_STORE C ON (C.COUPON_NO = SU.COUPON_NO)
+			JOIN PAYMENT T ON (T.ORDER_NO=O.ORDER_NO)
+			JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+			WHERE S.SELLER_NO=#{sellerNo}
+		    <if test="fromDate != null">
+		    AND ORDER_DATE BETWEEN #{fromDate} AND #{toDate}
+		    </if>
+		    ORDER BY ORDER_NO DESC
+			</select>
+			
+			<select id="showCouponListPo" parameterType="coupon" resultMap="poCouponResultMap">
+		
+			SELECT COUPON_NO as "COUPON_NO",
+            COUPON_NAME as "COUPON_NAME",
+            COUPON_PRICE as "COUPON_PRICE",
+            P.PRODUCT_NAME as "PRODUCT_NAME",
+            COUPON_STMT as "COUPON_STMT",
+            TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE",
+            TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+            FROM COUPON_STORE S
+            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO=S.PRODUCT_NO)
+           	WHERE S.SELLER_NO=#{sellerNo}
+           
+           </select>
+           
+			<select id="CouponDetailSearch" parameterType="coupon" resultMap="poCouponResultMap">
+			SELECT COUPON_NO as "COUPON_NO",
+            COUPON_NAME as "COUPON_NAME",
+            COUPON_PRICE as "COUPON_PRICE",
+            P.PRODUCT_NAME as "PRODUCT_NAME",
+           	CASE WHEN COUPON_STMT = 'Y' THEN '사용가능'
+                 WHEN COUPON_STMT = 'N' THEN '사용불가'
+              	 END AS "COUPON_STMT",
+            TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE",
+            TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+            FROM COUPON_STORE S
+            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO=S.PRODUCT_NO)
+           	WHERE S.SELLER_NO=#{sellerNo}
+           	 <choose>
+			<when test='couponStmt == "N"'>
+				AND COUPON_STMT = 'N'
+				<if test='fromDate != null'>
+					AND CREATE_DATE BETWEEN #{fromDate} AND #{toDate}
+				</if>
+			</when>
+			<when test='couponStmt == "Y"'>
+				AND COUPON_STMT = 'Y'
+				<if test='fromDate != null'>
+					AND CREATE_DATE BETWEEN #{fromDate} AND #{toDate}
+				</if>
+			</when>
+		</choose>
+			ORDER BY COUPON_NO DESC
+			</select>
+			
+			
+		<select id="detailCoupon" parameterType="coupon" resultMap="poCouponResultMap">
+		   SELECT
+		   COUPON_NO,
+		   COUPON_NAME,
+		   COUPON_PRICE,
+		   CREATE_DATE,
+		   P.PRODUCT_NAME,
+		   DUE_DATE
+		   FROM COUPON_STORE S
+		   LEFT JOIN PRODUCT P ON (P.PRODUCT_NO=S.PRODUCT_NO)
+		   WHERE COUPON_NO=#{couponNo}
+			
+		</select>
+			
+			
+			
+	
+	<update id="updateCouponPo" parameterType="coupon">
+	
+		UPDATE COUPON_STORE
+		SET COUPON_NAME = #{couponName}
+  		, COUPON_PRICE = #{couponPrice}
+		WHERE COUPON_NO = #{couponNo}
+		AND COUPON_STMT='Y'
+	
+			</update>
+	</mapper>
+	

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="productMapper">
+
+
+	<resultMap id="productResultSet" type="product">
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="PRICE" property="price" />
+		<result column="DISCRIPTION" property="description" />
+		<result column="ATTACHMENT1" property="attachment1" />
+		<result column="ATTACHMENT2" property="attachment2" />
+		<result column="ATTACHMENT3" property="attachment3" />
+		<result column="ATTACHMENT4" property="attachment4" />
+		<result column="PRODUCT_STATUS" property="productStatus" />
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="PAYMENT_NO" property="paymentNo" />
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="AMOUNT" property="amount" />
+		<result column="CON_NO" property="conNo" />
+		<result column="COUPON_PRICE" property="couponPrice" />
+	</resultMap>
+	
+	<select id="selectListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM PRODUCT
+		WHERE PRODUCT_STATUS = 1
+	</select>
+	
+	<select id="selectList" resultMap="productResultSet">
+		SELECT PRO.PRODUCT_NO
+		     , PRO.PRODUCT_NAME
+		     , PRO.PRICE
+		     , PRO.ATTACHMENT1
+		     , KEYCOU.COUPON_NO
+		     , KEYCOU.COUPON_NAME
+		     , KEYCOU.COUPON_PRICE
+		     , STOCOU.COUPON_NO
+		     , STOCOU.COUPON_NAME
+		     , STOCOU.COUPON_PRICE
+		FROM PRODUCT PRO
+		JOIN COUPON_KEYBOARDER KEYCOU ON (KEYCOU.PRODUCT_NO = PRO.PRODUCT_NO)
+		JOIN COUPON_STORE STOCOU ON (STOCOU.PRODUCT_NO = PRO.PRODUCT_NO)
+		WHERE PRODUCT_STATUS = 1
+		ORDER BY PRODUCT_NO DESC;
+	</select>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

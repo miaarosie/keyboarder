@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="orderMapper">
+
+	<resultMap id="orderResultSet" type="order">
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="ORDER_DATE" property="orderDate" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="COUPON_YN" property="couponYN" />
+		<result column="ORDER_STATUS" property="orderStatus" />
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="CON_NO" property="conNo" />
+	</resultMap>
+	
+
+</mapper>

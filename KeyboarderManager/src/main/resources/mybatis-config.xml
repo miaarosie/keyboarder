@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "mybatis-3-config.dtd" >
+<configuration>
+
+	<settings>
+		<setting name="jdbcTypeForNull" value="NULL" />
+	</settings>
+	
+	<typeAliases>
+		<typeAlias type="com.kh.kmanager.bo.store.model.vo.Store" alias="store" />		
+		<typeAlias type="com.kh.kmanager.po.product.model.vo.Product" alias="product" />
+		<typeAlias type="com.kh.kmanager.po.settlement.model.vo.Withdraw" alias="withdraw" />
+		<typeAlias type="com.kh.kmanager.po.settlement.model.vo.Settlement" alias="settlement" />
+		<typeAlias type="com.kh.kmanager.common.notice.model.vo.Notice" alias="notice" />
+		<typeAlias type="com.kh.kmanager.bo.graph.model.vo.SalesGraph" alias="salesGraph" />
+		<typeAlias type="com.kh.kmanager.member.model.vo.Member" alias="member" />
+		<typeAlias type="com.kh.kmanager.common.inquiry.model.vo.Inquiry" alias="inquiry" />
+		<typeAlias type="com.kh.kmanager.bo.coupon.model.vo.BoCoupon" alias="boCoupon" />
+		<typeAlias type="com.kh.kmanager.bo.settlement.model.vo.CWS_Settlement" alias="cws_settlement" />
+		<typeAlias type="com.kh.kmanager.bo.order.model.vo.Order" alias="boOrder" />
+		<typeAlias type="com.kh.kmanager.po.coupon.model.vo.Coupon" alias="coupon"/>
+		<typeAlias type="com.kh.kmanager.common.model.vo.PoMainData" alias="mainData"/>
+		<typeAlias type="com.kh.kmanager.po.order.model.vo.PoOrder" alias="poOrder" />
+	</typeAliases>
+	
+	<mappers>
+		<mapper resource="/mappers/store-mapper.xml" />
+		<mapper resource="/mappers/po-mapper.xml" />
+		<mapper resource="/mappers/settlement-mapper.xml" />
+		<mapper resource="/mappers/notice-mapper.xml" />
+		<mapper resource="/mappers/graph-mapper.xml" />
+		<mapper resource="/mappers/member-mapper.xml" />
+		<mapper resource="/mappers/inquiry-mapper.xml" />
+		<mapper resource="/mappers/boCoupon-mapper.xml" />
+		<mapper resource="/mappers/boSettlement-mapper.xml" />
+		<mapper resource="/mappers/boOrder-mapper.xml" />
+		<mapper resource="/mappers/poCoupon-mapper.xml"/>
+		<mapper resource="/mappers/mainPage-mapper.xml"/>
+		<mapper resource="/mappers/poOrder-mapper.xml" />
+		<mapper resource="/mappers/poInfo-mapper.xml" />
+	</mappers>
+	
+
+</configuration>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="mainPageMapper">
+	
+	<resultMap id="mainDataResultSet" type="mainData">
+		<result column="NEW_ORDER" property="newOrder" />
+		<result column="SHIPPING" property="shipping" />
+		<result column="CONFIRMED" property="confirmed" />
+		<result column="SUM_ORDER" property="sumOrder" />
+		<result column="SUM_SETTLE" property="sumSettle" />
+		
+		<result column="PAYMENT_BILL" property="paymentBill" />
+		<result column="PAYMENT_COUNT" property="paymentCount" />
+		<result column="REFUND_COUNT" property="refundCount" />
+		
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="ORDER_DATE" property="orderDate" />
+		
+		<result column="SHOW_PRODUCT" property="showProduct" />
+		<result column="HIDE_PRODUCT" property="hideProduct" />
+	</resultMap>
+
+	<select id="mainOrderSummary" parameterType="_int" resultMap="mainDataResultSet">
+		SELECT NEW_ORDER, SHIPPING, CONFIRMED, SUM_ORDER, SUM_SETTLE
+		FROM 
+		(SELECT COUNT(O.ORDER_NO) AS "NEW_ORDER"
+		FROM ORDERS O
+		JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		WHERE TO_CHAR(ORDER_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo}), 
+		(SELECT COUNT(O.ORDER_NO) AS "SHIPPING"
+		FROM ORDERS O
+		JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		WHERE ORDER_STATUS = 1
+		AND TO_CHAR(ORDER_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo}), 
+		(SELECT COUNT(O.ORDER_NO) AS "CONFIRMED"
+		FROM ORDERS O
+		JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		JOIN SETTLEMENT ST ON (O.ORDER_NO = ST.ORDER_NO)
+		WHERE ORDER_STATUS = 3
+		AND TO_CHAR(SETTLE_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo}), 
+		(SELECT NVL(SUM(ORDER_PRICE), 0) AS "SUM_ORDER"
+		FROM ORDERS O
+		JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		WHERE TO_CHAR(ORDER_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo}),
+		(SELECT NVL(SUM(SETTLE_DEPT), 0) AS "SUM_SETTLE"
+		FROM SETTLEMENT S
+		JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+		WHERE TO_CHAR(SETTLE_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo})
+	</select>
+	
+	<select id="mainPaymentSummary" parameterType="_int" resultMap="mainDataResultSet">
+		SELECT PAYMENT_BILL, PAYMENT_COUNT, REFUND_COUNT
+		FROM
+		(SELECT NVL(SUM(PAYMENT_BILL), 0) AS "PAYMENT_BILL"
+		            ,  COUNT(PAYMENT_NO) AS "PAYMENT_COUNT"
+		FROM PAYMENT P
+		JOIN ORDERS O ON (P.ORDER_NO = O.ORDER_NO)
+		JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		WHERE TO_CHAR(PAYMENT_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo}),
+		(SELECT COUNT(PAYMENT_NO) AS "REFUND_COUNT"
+		FROM PAYMENT P
+		JOIN ORDERS O ON (P.ORDER_NO = O.ORDER_NO)
+		JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		WHERE TO_CHAR(PAYMENT_DATE, 'YYYY-MM-DD') = TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND S.SELLER_NO = #{sellerNo}
+		AND PAYMENT_STATUS = 'N')
+	</select>
+	
+	<select id="mainBarGraph" parameterType="_int" resultMap="mainDataResultSet">
+		SELECT *
+		FROM (SELECT SUM(ORDER_PRICE) AS "ORDER_PRICE", ORDER_DATE
+			FROM (
+			SELECT SELLER_NO
+	             , EXTRACT(MONTH FROM ORDER_DATE) ORDER_DATE
+	             , ORDER_PRICE
+			FROM ORDERS
+			JOIN PRODUCT USING (PRODUCT_NO)
+			JOIN SELLER USING (SELLER_NO)
+			WHERE SELLER_NO = #{sellerNo})
+			GROUP BY  ORDER_DATE, SELLER_NO
+			ORDER BY  ORDER_DATE ASC)
+		<![CDATA[WHERE ROWNUM <= 4]]>
+	</select>
+	
+	<select id="mainProductSummary" parameterType="_int" resultMap="mainDataResultSet">
+		SELECT SHOW_PRODUCT, HIDE_PRODUCT
+		FROM 
+		(SELECT COUNT(PRODUCT_NO) "SHOW_PRODUCT"
+		FROM PRODUCT
+		WHERE PRODUCT_STATUS = 1
+		AND SELLER_NO = #{sellerNo}),
+		(SELECT COUNT(PRODUCT_NO) "HIDE_PRODUCT"
+		FROM PRODUCT
+		WHERE PRODUCT_STATUS = 0
+		AND SELLER_NO = #{sellerNo})
+	</select>
+
+</mapper>

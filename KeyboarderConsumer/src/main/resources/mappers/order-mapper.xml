@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="orderMapper">
+
+	<resultMap id="orderResultSet" type="order">
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="ORD_ORDER_DATE" property="orderDate" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="COUPON_YN" property="couponYN" />
+		<result column="ORDER_STATUS" property="orderStatus" />
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="CON_NO" property="conNo" />
+		<result column="ATTACHMENT1" property="productAttachment" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="PRICE" property="productPrice" />
+		<result column="K_COUPON_PRICE" property="keyCouponPrice" />
+		<result column="S_COUPON_PRICE" property="stoCouponPrice" />
+		<result column="CON_NAME" property="conName" />
+		<result column="CON_PHONE" property="conPhone" />
+		<result column="ADDRESS" property="conAddress" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="PAYMENT_NO" property="paymentNo" />
+		<result column="PAYMENT_BILL" property="paymentBill" />
+	</resultMap>
+
+	<!--
+		FO 주문내역 전체 조회
+		* 주멋돌
+	 -->
+	<select id="foTotalViewList" parameterType="_int" resultMap="orderResultSet">
+		SELECT ORD.ORDER_NO
+			 , PAYMENT_NO
+		     , TO_CHAR(ORDER_DATE, 'YY-MM-DD') "ORD_ORDER_DATE"
+		     , ORDER_PRICE
+		     , ORDER_STATUS
+		     , ORD.PRODUCT_NO
+		     , PRODUCT_NAME
+		     , ATTACHMENT1
+		     , PAYMENT_BILL
+		FROM ORDERS ORD
+		JOIN PRODUCT PRO ON (PRO.PRODUCT_NO = ORD.PRODUCT_NO)
+		JOIN PAYMENT P ON (P.ORDER_NO = ORD.ORDER_NO)
+		WHERE CON_NO = #{conNo}
+		ORDER BY ORDER_DATE DESC
+	</select>
+
+	<!--
+		FO 주문내역 월별 조회
+		* 주멋돌
+	 -->
+	<select id="foSearchDate" parameterType="order" resultMap="orderResultSet">
+		SELECT ORD.ORDER_NO
+			 , PAYMENT_NO
+		     , TO_CHAR(ORDER_DATE, 'YY-MM-DD') "ORD_ORDER_DATE"
+		     , ORDER_PRICE
+		     , ORDER_STATUS
+		     , ORD.PRODUCT_NO
+		     , PRODUCT_NAME
+		     , ATTACHMENT1
+		FROM ORDERS ORD
+		JOIN PRODUCT PRO ON (PRO.PRODUCT_NO = ORD.PRODUCT_NO)
+		JOIN PAYMENT P ON (P.ORDER_NO = ORD.ORDER_NO)
+		WHERE CON_NO = #{conNo}
+		  AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		  AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		ORDER BY ORDER_DATE DESC
+	</select>
+	
+	<!--
+		FO 주문내역 상세 조회
+		* 주멋돌
+	 -->
+	<select id="foDetailViewList" parameterType="string" resultMap="orderResultSet">
+		SELECT ORD.ORDER_NO
+		     , TO_CHAR(ORD.ORDER_DATE, 'YYYY-MM-DD') "ORD_ORDER_DATE"
+		     , ORD.ORDER_STATUS
+		     , PRO.PRODUCT_NAME
+		     , PRO.PRICE
+		     , PRO.ATTACHMENT1
+		     , KCOU.COUPON_PRICE AS "K_COUPON_PRICE"
+		     , SCOU.COUPON_PRICE AS "S_COUPON_PRICE"
+		     , CONS.CON_NAME
+		     , CONS.CON_PHONE
+		     , CONS.ADDRESS
+		     , SEL.SELLER_NAME
+		     , P.PAYMENT_NO
+		FROM ORDERS ORD
+		LEFT JOIN PRODUCT PRO ON (PRO.PRODUCT_NO = ORD.PRODUCT_NO)
+		LEFT JOIN SELLER SEL ON (PRO.SELLER_NO = SEL.SELLER_NO)
+		LEFT JOIN CONSUMER CONS ON (ORD.CON_NO = CONS.CON_NO)
+		LEFT JOIN KEYBOARDER_USE KUSE ON (ORD.ORDER_NO = KUSE.ORDER_NO)
+		LEFT JOIN STORE_USE SUSE ON(ORD.ORDER_NO = SUSE.ORDER_NO)
+		LEFT JOIN COUPON_KEYBOARDER KCOU ON (KUSE.COUPON_NO = KCOU.COUPON_NO)
+		LEFT JOIN COUPON_STORE SCOU ON (SUSE.COUPON_NO = SCOU.COUPON_NO)
+		JOIN PAYMENT P ON (P.ORDER_NO = ORD.ORDER_NO)
+		WHERE ORD.ORDER_NO = #{ordNo}
+	</select>
+	
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

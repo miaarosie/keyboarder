@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<bean class="org.apache.commons.dbcp.BasicDataSource" id="dataSource" destroy-method="close">
+		<!-- 어느 DB에 접속할 건지 설정 -->
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@localhost:1521:xe" />
+		<property name="username" value="KEYBOARDER" />
+		<property name="password" value="KEYBOARDER" />
+	</bean>
+	
+	 <bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactory">
+	 	<!-- MyBatis 설정파일의 위치를 지정하여 설정값을 가져오겠다 -->
+	 	<property name="configLocation" value="classpath:mybatis-config.xml" />
+	 	<!-- DB 연결을 위한 도구를 참조하겠다 -->
+	 	<property name="dataSource" ref="dataSource" />
+	 </bean>
+	 
+ 	 <bean class="org.mybatis.spring.SqlSessionTemplate" id="sqlSession">
+	 	<!-- 2단계에서 만들었던 SqlSessionFactoryBean 객체를 넘기면서 SqlSessionTemplate 객체 생성 -->
+	 	<constructor-arg ref="sqlSessionFactory" />
+	 </bean>
+	
+		<!-- 파일업로드 관련 빈 등록 -->
+	<bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="maxUploadSize" value="10000000" />
+		<!-- maxInMemorySize : 메모리 상의 파일 최대 용량 -->
+		<property name="maxInMemorySize" value="10000000" />
+	</bean>
+	
+	
+</beans>

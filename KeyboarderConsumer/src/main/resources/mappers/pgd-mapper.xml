@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="pgdMapper">
+
+	<insert id="insertOrder" parameterType="pgd">
+		INSERT INTO ORDERS
+		VALUES (#{orderNo}
+			  , DEFAULT
+			  , #{orderPrice}
+			  <choose>
+				  <when test="couponPrice eq 0">
+				  , 'N'
+				  </when>
+				  <otherwise>
+				  , 'Y'
+				  </otherwise>
+			  </choose>
+			  , 1
+			  , #{productNo}
+			  , #{conNo}
+		)
+	</insert>
+	
+	<insert id="insertPayment" parameterType="pgd">
+		INSERT INTO PAYMENT (PAYMENT_NO
+                           , PAYMENT_BILL
+                           , ORDER_NO)
+		VALUES (#{paymentNo}
+			  , #{paymentBill}
+			  , #{orderNo})
+	</insert>
+	
+	<insert id="insertSettlement" parameterType="pgd">
+		INSERT INTO SETTLEMENT (SELLER_NO
+							  , ORDER_NO
+							  , COMMITION
+							  , SETTLE_DATE
+							  , SETTLE_DEPT
+							  , TAX_AMOUNT
+							  , SUPPLY_VALUE
+							  , PAYMENT_NO)
+		VALUES (10000
+			  , #{orderNo}
+			  , #{commition}
+			  , null
+			  , #{settleDept}
+			  , #{taxAmount}
+			  , #{supplyValue}
+			  , #{paymentNo})
+	</insert>
+	
+	<select id="selectRefundAmount" parameterType="pgd" resultType="_int">
+		SELECT PAYMENT_BILL
+		FROM PAYMENT
+		WHERE PAYMENT_NO = #{paymentNo}
+		AND ORDER_NO = #{orderNo}
+	</select>
+	
+	<update id="refundOrder" parameterType="pgd">
+		UPDATE ORDERS
+		SET ORDER_STATUS = 4
+		WHERE ORDER_NO = #{orderNo}
+	</update>
+	
+	<update id="refundPayment" parameterType="pgd">
+		UPDATE PAYMENT
+		SET PAYMENT_STATUS = 'N'
+		  , REFUND_DATE = SYSDATE
+		WHERE PAYMENT_NO = #{paymentNo}
+		AND ORDER_NO = #{orderNo}
+	</update>
+	
+	<insert id="insertKeyboarderCouponUse" parameterType="pgd">
+		INSERT INTO KEYBOARDER_USE
+		VALUES (#{couponNo}, #{orderNo})
+	</insert>
+	
+	<insert id="insertStoreCouponUse" parameterType="pgd">
+		INSERT INTO STORE_USE
+		VALUES (#{couponNo}, #{orderNo})
+	</insert>
+	
+	<update id="confirmPay" parameterType="pgd">
+		UPDATE ORDERS
+		SET ORDER_STATUS = 3
+		WHERE ORDER_NO = #{orderNo}
+	</update>
+	
+	<update id="confirmSettle" parameterType="pgd">
+		UPDATE SETTLEMENT
+		SET SETTLE_DATE = SYSDATE
+		WHERE ORDER_NO = #{orderNo}
+	</update>
+	
+</mapper>

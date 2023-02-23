@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="member-mapper">
+
+
+	<resultMap id="memberResultSet" type="member">
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="REP_NAME" property="repName"/>
+		<result column="SELLER_ID" property="sellerId" />
+		<result column="SELLER_PWD" property="sellerPwd" />
+		<result column="SELLER_EMAIL" property="sellerEmail" />
+		<result column="SELLER_PHONE" property="sellerPhone" />
+		<result column="CORP_NO" property="corpNo" />
+		<result column="ACCOUNT_NO" property="accountNo" />
+		<result column="JOIN_DATE" property="joinDate" />
+		<result column="LOCATION" property="location" />
+		<result column="SELLER_STATUS" property="sellerStatus" />
+		<result column="IDENTIFY_STATUS" property="identifyStatus" />
+		<result column="MAIL_AUTH" property="mailAuth" />
+		<result column="MAIL_KEY" property="mailKey" />
+		<result column="LOGO_ATTACHMENT" property="logoAttachment" />
+	</resultMap>
+	
+	<resultMap id="adminResultSet" type="member">
+		<result column="ADMIN_ID" property="sellerId" />
+		<result column="ADMIN_PWD" property="sellerPwd" />
+	</resultMap>
+	
+	
+	<select id="loginMember" parameterType="member" resultMap="memberResultSet">
+		SELECT *
+		FROM SELLER
+		WHERE SELLER_ID = #{sellerId}
+			AND SELLER_PWD = #{sellerPwd}
+			AND SELLER_STATUS = 'Y'
+	</select>
+	
+	<select id="loginAdmin" parameterType="member" resultMap="adminResultSet">
+		SELECT *
+		FROM ADMIN
+		WHERE ADMIN_ID = #{sellerId}
+			AND ADMIN_PWD = #{sellerPwd}
+	</select>	
+	
+	<select id="findId" parameterType="string" resultType="string">
+		SELECT SELLER_ID
+		FROM SELLER
+		WHERE CORP_NO = #{corpNo}
+	      AND MAIL_AUTH = '1'
+	</select>
+	
+	<select id="initializePwdForm" parameterType="member" resultMap="memberResultSet">
+		SELECT *
+		FROM SELLER
+		WHERE SELLER_ID = #{sellerId}
+		  AND CORP_NO = #{corpNo}
+		  AND MAIL_AUTH = '1'
+	</select>
+	
+	<update id="initializePwd" parameterType="member">
+		UPDATE SELLER
+		   SET SELLER_PWD = #{sellerPwd}
+		 WHERE SELLER_ID = #{sellerId}	
+	</update>
+	
+	<insert id="insertMember" parameterType="member">
+		INSERT INTO SELLER(SELLER_NO
+						 , SELLER_NAME
+						 , REP_NAME
+						 , SELLER_ID
+						 , SELLER_PWD
+						 , SELLER_EMAIL
+						 , SELLER_PHONE
+						 , CORP_NO
+						 , ACCOUNT_NO
+						 , JOIN_DATE
+						 , LOCATION
+						 , SELLER_STATUS
+						 , IDENTIFY_STATUS
+						 , MAIL_AUTH
+						 , MAIL_KEY
+						 , LOGO_ATTACHMENT)
+				   VALUES (SEQ_SELLER_NO.NEXTVAL
+				   		 , #{sellerName}
+				   		 , #{repName}
+				   		 , #{sellerId}
+				   		 , #{sellerPwd}
+				   		 , #{sellerEmail}
+				   		 , #{sellerPhone}
+				   		 , #{corpNo}
+				   		 , #{accountNo}
+				   		 , DEFAULT
+				   		 , #{location}
+				   		 , DEFAULT
+				   		 , DEFAULT
+				   		 , 0
+				   		 , 'NULL'
+				   		 , #{logoAttachment})
+	</insert>
+	
+	<!-- 회원가입 시 이메일 인증을 위한 랜덤번호 저장 -->
+	<update id="updateMailKey" parameterType="member">
+		UPDATE SELLER 
+			SET MAIL_KEY = #{mailKey} 
+			WHERE SELLER_EMAIL = #{sellerEmail} 
+					AND SELLER_ID = #{sellerId}
+	</update>
+	
+	<!--  메일 인증 mail_auth 기본값 0에서 1로 변경하여 로그인 허용 -->
+	<update id="updateMailAuth" parameterType="member">
+		UPDATE SELLER
+			SET MAIL_AUTH='1'
+			WHERE SELLER_EMAIL = #{sellerEmail} 
+				AND MAIL_KEY = #{mailKey}
+	</update>
+	
+	<!-- 이메일 인증을 안했을 경우 0반환, 로그인시 이메일인증여부 체크 -->
+	<select id="emailAuthFail" parameterType="String" resultType="_int">
+		SELECT COUNT(*)
+		FROM SELLER
+		WHERE SELLER_ID = #{id}
+			AND MAIL_AUTH = '0'
+	</select>	
+	
+	<select id="idCheck" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		FROM SELLER
+		WHERE SELLER_ID = #{checkId}
+	</select>
+	
+	<select id="corpNoCheck" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		FROM SELLER
+		WHERE CORP_NO = #{corpNo}
+	</select>
+	
+
+</mapper>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "mybatis-3-config.dtd" >
+<configuration>
+
+	<settings>
+		<setting name="jdbcTypeForNull" value="NULL" />
+	</settings>
+	
+	<typeAliases>
+		<typeAlias type="com.kh.keyboarder.order.model.vo.PGData" alias="pgd" />
+		<typeAlias type="com.kh.keyboarder.member.model.vo.Member"  alias="member"/>
+		<typeAlias type="com.kh.keyboarder.order.model.vo.Order"  alias="order"/>
+		<typeAlias type="com.kh.keyboarder.product.model.vo.Product"  alias="product"/>
+	</typeAliases>
+	
+	<mappers>
+		<mapper resource="/mappers/pgd-mapper.xml" />
+		<mapper resource="/mappers/member-mapper.xml" />
+		<mapper resource="/mappers/product-mapper.xml" />
+		<mapper resource="/mappers/order-mapper.xml" />
+	</mappers>
+	
+</configuration>

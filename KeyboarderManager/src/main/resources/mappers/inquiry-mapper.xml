@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="inquiryMapper">
+	<resultMap id="inquiryResultSet" type="inquiry">
+		<result column="INQUIRY_NO" property="inquiryNo" />
+		<result column="INQUIRY_NAME" property="inquiryName" />
+		<result column="INQUIRY_CONTENT" property="inquiryContent" />
+		<result column="INQUIRY_DATE" property="inquiryDate" />
+		<result column="INQUIRY_REPLY" property="inquiryReply" />
+		<result column="REPLY_DATE" property="replyDate" />
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+	</resultMap>
+	
+	<select id="selectListCount" resultType="_int">
+		SELECT COUNT(*)
+		FROM INQUIRY
+		<if test="sellerNo != 0">
+			WHERE SELLER_NO = #{sellerNo}
+		</if>
+	</select>
+	
+	<select id="selectList" parameterType="_int" resultMap="inquiryResultSet">
+		SELECT INQUIRY_NO
+					, nvl(INQUIRY_REPLY, '답변대기') AS "INQUIRY_REPLY"
+					, INQUIRY_NAME
+					, TO_CHAR(INQUIRY_DATE, 'YYYY-MM-DD') AS "INQUIRY_DATE"
+		FROM INQUIRY
+		<choose>
+		<when test="sellerNo != 0">
+			WHERE SELLER_NO = #{sellerNo}
+			ORDER BY INQUIRY_NO DESC
+		</when>
+		<otherwise>
+			ORDER BY INQUIRY_NO DESC
+		</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insertInquiry" parameterType="inquiry">
+		INSERT INTO INQUIRY (INQUIRY_NO
+												   , INQUIRY_NAME
+												   , INQUIRY_CONTENT
+												   , SELLER_NO)
+					                VALUES (SEQ_INQUIRY.NEXTVAL
+					                			   , #{inquiryName}
+					                			   , #{inquiryContent}
+					                			   , #{sellerNo})
+	</insert>
+	
+	<select id="selectInquiry" parameterType="_int" resultMap="inquiryResultSet">
+		SELECT INQUIRY_NO
+					  , INQUIRY_NAME
+					  , INQUIRY_CONTENT
+					  , SELLER_NAME
+					  ,  nvl(INQUIRY_REPLY, '답변대기') AS "INQUIRY_REPLY"
+		FROM INQUIRY
+		JOIN SELLER USING(SELLER_NO)
+		WHERE INQUIRY_NO = #{inquiryNo}
+	</select>
+	
+	<select id="selectReplyList" parameterType="_int" resultMap="inquiryResultSet">
+		SELECT INQUIRY_REPLY
+		FROM INQUIRY
+		WHERE INQUIRY_NO = #{inquiryNo}
+	</select>
+	
+	<insert id="insertReply" parameterType="inquiry">
+		UPDATE  INQUIRY SET INQUIRY_REPLY = #{inquiryReply}
+		WHERE INQUIRY_NO = #{inquiryNo}
+	</insert>
+</mapper>

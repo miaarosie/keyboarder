@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="boOrderMapper">
+
+	<resultMap id="boOrderResultSet" type="boOrder">
+		<result column="CONFIRMDATE_BUY" property="buyConfirmDate" />
+		<result column="ORDER_DATE" property="orderDate" />
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="CON_NAME" property="conName" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="STORE_COUPON_PRICE" property="poCouponPrice" />
+		<result column="KEYBOARDER_COUPON_PRICE" property="boCouponPrice" />
+		<result column="PAYMENT_BILL" property="paymentBill" />
+		<result column="COMMISSION" property="commission" />
+	</resultMap>
+
+	<select id="selectListCount_default" parameterType="string" resultType="_int">
+		SELECT COUNT(*)
+		  FROM ORDERS
+		 WHERE TO_CHAR(ORDER_DATE, 'YYYY-MM') = #{nowMonth}
+	</select>
+	
+	<select id="selectAllOrderList" parameterType="string" resultMap="boOrderResultSet">
+		SELECT A.*
+		  FROM (SELECT TO_CHAR(SETT.SETTLE_DATE, 'YYYY-MM-DD') "CONFIRMDATE_BUY"
+			         , TO_CHAR(O.ORDER_DATE, 'YYYY-MM-DD') "ORDER_DATE"
+			         , O.ORDER_NO "ORDER_NO"
+			         , P.PRODUCT_NAME "PRODUCT_NAME"
+			         , S.SELLER_NAME "SELLER_NAME"
+			         , CON.CON_NAME "CON_NAME"
+			         , O.ORDER_PRICE "ORDER_PRICE"
+			         , NVL(C_STO.COUPON_PRICE, 0) "STORE_COUPON_PRICE" <!-- 스토어쿠폰 -->
+			         , NVL(C_KEY.COUPON_PRICE, 0) "KEYBOARDER_COUPON_PRICE" <!-- 키보더쿠폰 -->
+			         , PAY.PAYMENT_BILL "PAYMENT_BILL"
+			         , CASE WHEN C_STO.COUPON_PRICE IS NOT NULL THEN O.ORDER_PRICE * 0.15 <!-- 스토어쿠폰을 사용한경우 -->
+			                WHEN C_KEY.COUPON_PRICE IS NOT NULL THEN O.ORDER_PRICE * 0.15 - C_KEY.COUPON_PRICE <!-- 키보더쿠폰을 사용한경우 -->
+			                ELSE O.ORDER_PRICE * 0.15 <!-- 아무것도 안쓴경우 -->
+			            END "COMMISSION"
+			         , TO_CHAR(O.ORDER_DATE, 'YYYY-MM') "MONTH"
+			      FROM ORDERS O
+			      JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+			      JOIN CONSUMER CON ON (CON.CON_NO = O.CON_NO)
+			      JOIN PAYMENT PAY ON (PAY.ORDER_NO = O.ORDER_NO)
+			      JOIN SETTLEMENT SETT ON (SETT.PAYMENT_NO = PAY.PAYMENT_NO) 
+			      JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+			      LEFT JOIN STORE_USE STO_U ON (STO_U.ORDER_NO = O.ORDER_NO) 
+			      LEFT JOIN COUPON_STORE C_STO ON (C_STO.COUPON_NO = STO_U.COUPON_NO)
+			      LEFT JOIN KEYBOARDER_USE KEY_U ON (KEY_U.ORDER_NO = O.ORDER_NO)
+			      LEFT JOIN COUPON_KEYBOARDER C_KEY ON (C_KEY.COUPON_NO = KEY_U.COUPON_NO)
+			      ORDER BY O.ORDER_DATE DESC) A
+		 WHERE A.MONTH = #{nowMonth}
+	</select>
+	
+	<select id="selectOrderList" parameterType="hashmap" resultMap="boOrderResultSet">
+		SELECT A.*
+		  FROM (SELECT TO_CHAR(SETT.SETTLE_DATE, 'YYYY-MM-DD') "CONFIRMDATE_BUY"
+		             , TO_CHAR(O.ORDER_DATE, 'YYYY-MM-DD') "ORDER_DATE"
+		             , O.ORDER_NO "ORDER_NO"
+		             , P.PRODUCT_NAME "PRODUCT_NAME"
+		             , S.SELLER_NAME "SELLER_NAME"
+		             , CON.CON_NAME "CON_NAME"
+		             , O.ORDER_PRICE "ORDER_PRICE"
+		             , NVL(C_STO.COUPON_PRICE, 0) "STORE_COUPON_PRICE" <!-- 스토어쿠폰 -->
+		             , NVL(C_KEY.COUPON_PRICE, 0) "KEYBOARDER_COUPON_PRICE" <!-- 키보더쿠폰 --> 
+		             , PAY.PAYMENT_BILL "PAYMENT_BILL"
+		             , CASE WHEN C_STO.COUPON_PRICE IS NOT NULL THEN O.ORDER_PRICE * 0.15 <!-- 스토어쿠폰을 사용한경우 -->
+		                    WHEN C_KEY.COUPON_PRICE IS NOT NULL THEN O.ORDER_PRICE * 0.15 - C_KEY.COUPON_PRICE <!-- 키보더쿠폰을 사용한경우 -->
+		                    ELSE O.ORDER_PRICE * 0.15 <!-- 아무것도 안쓴경우 -->
+		                END "COMMISSION"
+		          FROM ORDERS O
+		          JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+		          JOIN CONSUMER CON ON (CON.CON_NO = O.CON_NO)
+		          JOIN PAYMENT PAY ON (PAY.ORDER_NO = O.ORDER_NO)
+		          JOIN SETTLEMENT SETT ON (SETT.PAYMENT_NO = PAY.PAYMENT_NO) 
+		          JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		          LEFT JOIN STORE_USE STO_U ON (STO_U.ORDER_NO = O.ORDER_NO) 
+		          LEFT JOIN COUPON_STORE C_STO ON (C_STO.COUPON_NO = STO_U.COUPON_NO)
+		          LEFT JOIN KEYBOARDER_USE KEY_U ON (KEY_U.ORDER_NO = O.ORDER_NO)
+		          LEFT JOIN COUPON_KEYBOARDER C_KEY ON (C_KEY.COUPON_NO = KEY_U.COUPON_NO)
+		          ORDER BY O.ORDER_DATE DESC) A
+		 WHERE TO_DATE(ORDER_DATE, 'YYYY-MM-DD')
+		 	   BETWEEN TO_DATE(#{currentDate}, 'YYYY-MM-DD') AND TO_DATE(#{endDate}, 'YYYY-MM-DD')
+	 	   <choose>
+		 	   <when test="orderNo != '' and keyword != ''">
+		 	   		<choose>
+		 	   			<when test="keywordType == 'keyword_sellerName'">
+		 	   				AND ORDER_NO LIKE '%' || #{orderNo} || '%'
+		 	   				AND SELLER_NAME LIKE '%' || #{keyword} || '%'
+		 	   			</when>
+		 	   			<when test="keywordType == 'keyword_productName'">
+		 	   				AND ORDER_NO LIKE '%' || #{orderNo} || '%'
+		 	   				AND PRODUCT_NAME LIKE '%' || #{keyword} || '%'
+		 	   			</when>
+		 	   			<when test="keywordType == 'keyword_conName'">
+		 	   				AND ORDER_NO LIKE '%' || #{orderNo} || '%'
+		 	   				AND CON_NAME LIKE '%' || #{keyword} || '%'
+		 	   			</when>
+		 	   		</choose>
+		 	   </when>
+		 	   <when test="orderNo != '' and keyword == ''">
+		 	   		AND ORDER_NO LIKE '%' || #{orderNo} || '%'	
+		 	   </when>
+		 	   <when test="orderNo == '' and keyword != ''">
+					<choose>
+	 	   				<when test="keywordType == 'keyword_sellerName'">
+		 	   				AND SELLER_NAME LIKE '%' || #{keyword} || '%'
+		 	   			</when>
+		 	   			<when test="keywordType == 'keyword_productName'">
+		 	   				AND PRODUCT_NAME LIKE '%' || #{keyword} || '%'
+		 	   			</when>
+		 	   			<when test="keywordType == 'keyword_conName'">
+		 	   				AND CON_NAME LIKE '%' || #{keyword} || '%'
+		 	   			</when>
+		 	   		</choose>
+		 	   </when>
+	 	   </choose>
+	</select>
+
+
+</mapper>

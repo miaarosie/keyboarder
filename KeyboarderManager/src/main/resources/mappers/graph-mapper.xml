@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="graphMapper">
+
+	<resultMap id="salesGraphResultSet" type="salesGraph">
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="SETTLE_DEPT" property="settleDept" />
+		<result column="PRODUCT_NAME" property="productName"/>
+		<result column="ORDER_COUNT" property="orderCount"/>
+		<result column="PRICE" property="price"/>
+		<result column="ATTACHMENT" property="attachment"/>
+	</resultMap>
+
+	<select id="selectSalesGraph" parameterType="_int" resultMap="salesGraphResultSet">
+		SELECT SUM(SETTLE_DEPT) AS "SETTLE_DEPT"
+			 , SELLER_NAME AS "SELLER_NAME"
+		FROM (
+		SELECT SETTLE_DEPT
+		            , SELLER_NO
+		            , EXTRACT(MONTH FROM SETTLE_DATE) SETTLE_DATE
+		            , SELLER_NAME
+		FROM SETTLEMENT
+		JOIN SELLER USING (SELLER_NO))
+		WHERE SETTLE_DATE = #{month}
+		GROUP BY SETTLE_DATE, SELLER_NAME
+		ORDER BY SETTLE_DATE, SELLER_NAME
+	</select>
+	
+	<select id="selectAvgSalesGraph" resultMap="salesGraphResultSet">
+		SELECT AVG(SETTLE_DEPT) AS "SETTLE_DEPT"
+             , SELLER_NAME AS "SELLER_NAME"
+		FROM (SELECT SUM(SETTLE_DEPT) SETTLE_DEPT
+                   , SELLER_NAME
+                   , SETTLE_DATE
+		      FROM (SELECT SETTLE_DEPT
+                         , SELLER_NO
+                         , EXTRACT(MONTH FROM SETTLE_DATE) SETTLE_DATE
+                         , SELLER_NAME
+	                FROM SETTLEMENT
+	                JOIN SELLER USING (SELLER_NO)) 
+	                GROUP BY SELLER_NAME, SETTLE_DATE)
+		GROUP BY SELLER_NAME
+		ORDER BY SELLER_NAME
+	</select>
+
+	<!-- 상품통계 전체 조회용 -->
+	<select id="selectopProduct" resultMap="salesGraphResultSet">
+	<!-- SELECT RNUM, ORDER_COUNT, PRODUCT_NAME
+	FROM (
+	SELECT ROWNUM RNUM, ORDER_COUNT, PRODUCT_NAME
+	FROM(SELECT ORDER_COUNT, PRODUCT_NAME
+            FROM (SELECT COUNT(ORDER_NO) as "ORDER_COUNT", PRODUCT_NAME
+                        FROM ORDERS O
+                        JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+                        GROUP BY PRODUCT_NAME)
+            ORDER BY ORDER_COUNT DESC)) -->
+            
+     SELECT RNUM, ORDER_COUNT, PRODUCT_NAME, PRICE,SELLER_NAME
+	FROM (
+	SELECT ROWNUM RNUM, ORDER_COUNT, PRODUCT_NAME, PRICE,SELLER_NAME
+	FROM(SELECT ORDER_COUNT, PRODUCT_NAME, PRICE,SELLER_NAME
+            FROM (SELECT COUNT(ORDER_NO) as "ORDER_COUNT", PRODUCT_NAME, PRICE,SELLER_NAME
+                        FROM ORDERS O
+                        JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+                        JOIN SELLER S ON (S.SELLER_NO=P.SELLER_NO)
+                        GROUP BY PRODUCT_NAME,PRICE,SELLER_NAME)
+	ORDER BY ORDER_COUNT DESC, PRICE DESC))
+ 			<![CDATA[WHERE RNUM<=3]]>
+ 			 
+	</select>
+	
+	
+	
+	
+	
+	<!-- 상품 가져오기 -->
+	<select id="productImg" resultMap="salesGraphResultSet"> 
+		 --상품통계 조회용---
+   SELECT RNUM, ORDER_COUNT, PRODUCT_NAME, PRICE,SELLER_NAME,ATTACHMENT1
+	FROM (
+	SELECT ROWNUM RNUM, ORDER_COUNT, PRODUCT_NAME, PRICE,SELLER_NAME,ATTACHMENT1
+	FROM(SELECT ORDER_COUNT, PRODUCT_NAME, PRICE,SELLER_NAME,ATTACHMENT1
+            FROM (SELECT COUNT(ORDER_NO) as "ORDER_COUNT", PRODUCT_NAME, PRICE,SELLER_NAME,ATTACHMENT1
+                        FROM ORDERS O
+                        JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+                        JOIN SELLER S ON (S.SELLER_NO=P.SELLER_NO)
+                        GROUP BY PRODUCT_NAME,PRICE,SELLER_NAME,ATTACHMENT1)
+	ORDER BY ORDER_COUNT DESC, PRICE DESC))
+ 			<![CDATA[WHERE RNUM<=3]]>
+	</select>
+	
+
+
+
+		
+</mapper>

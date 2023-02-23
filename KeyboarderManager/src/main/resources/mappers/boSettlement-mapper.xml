@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="boSettlement-mapper">
+
+	<resultMap id="sellerResultSet" type="cws_settlement">
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="SETTLE_DATE" property="settleDate" />
+		<result column="COMMITION" property="commition" />
+		<result column="SETTLE_DEPT" property="settleDept" />
+		<result column="TAX_AMOUNT" property="taxAmount" />
+		<result column="SUPPLY_VALUE" property="supplyValue" />
+		<result column="PAYMENT_NO" property="paymentNo" />
+		<result column="KCOUPON_PRICE" property="kcouponPrice" />
+		<result column="SCOUPON_PRICE" property="scouponPrice" />
+	</resultMap>
+	
+	<resultMap id="modalResultSet" type="cws_settlement">
+		<result column="PRICE" property="price" />
+		<result column="CORP_NO" property="corpNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="REP_NAME" property="repName" />
+		<result column="LOCATION" property="location" />
+		<result column="SELLER_EMAIL" property="sellerEmail" />
+		<result column="SELLER_PHONE" property="sellerPhone" />
+		<result column="SUPPLY_VALUE" property="supplyValue" />
+		<result column="TAX_AMOUNT" property="taxAmount" />
+		<result column="SETTLE_DATE" property="settleDate" /> 
+	</resultMap>
+
+	<resultMap id="storeResultSet" type="cws_settlement">
+		<result column="SETTLE_DATE" property="settleDate" />
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="COMMITION" property="commition" />
+		<result column="KCOUPON_PRICE" property="kcouponPrice" />
+		<result column="SCOUPON_PRICE" property="scouponPrice" />
+		<result column="SETTLE_DEPT" property="settleDept" />
+	</resultMap>
+
+	<select id="selectSeller" resultMap="sellerResultSet">
+		SELECT SELLER_NAME
+		FROM SELLER
+	</select>
+
+	<select id="selectSellerCommition" resultMap="sellerResultSet">
+		SELECT TO_CHAR(SETTLE_DATE, 'yyyy-mm') SETTLE_DATE ,SUM (KCOUPON_PRICE) KCOUPON_PRICE, SUM (SCOUPON_PRICE) SCOUPON_PRICE, SUM (ORDER_PRICE) ORDER_PRICE, SUM (COMMITION) COMMITION, SUM (SETTLE_DEPT) SETTLE_DEPT, SUM (TAX_AMOUNT) TAX_AMOUT, SUM (SUPPLY_VALUE) SUPPLY_VALUE, SELLER_NAME, SELLER_NO
+		FROM (SELECT ORDER_NO, KCOUPON, SCOUPON, CK.COUPON_PRICE KCOUPON_PRICE, CS.COUPON_PRICE SCOUPON_PRICE, SE.SELLER_NO, ORDER_PRICE, SETTLE_DATE, COMMITION, SETTLE_DEPT, TAX_AMOUNT, SUPPLY_VALUE, PAYMENT_NO
+		    FROM(SELECT ORDER_NO, K.COUPON_NO KCOUPON, S.COUPON_NO SCOUPON, ORDER_PRICE
+		        FROM ORDERS
+		        LEFT JOIN KEYBOARDER_USE K USING(ORDER_NO)
+		        LEFT JOIN STORE_USE S USING(ORDER_NO)) O
+		    LEFT JOIN COUPON_KEYBOARDER CK ON (CK.COUPON_NO = KCOUPON)
+		    LEFT JOIN COUPON_STORE CS ON (CS.COUPON_NO = SCOUPON)
+		    JOIN SETTLEMENT SE USING (ORDER_NO)) Z
+		JOIN SELLER USING (SELLER_NO)
+        GROUP BY SELLER_NAME, SELLER_NO, TO_CHAR(SETTLE_DATE, 'yyyy-mm')
+        ORDER BY SETTLE_DATE DESC
+	</select>
+
+	<select id="searchAllStoreCommition" parameterType="cws_settlement" resultMap="sellerResultSet">
+		SELECT TO_CHAR(SETTLE_DATE, 'yyyy-mm') SETTLE_DATE ,SUM (KCOUPON_PRICE) KCOUPON_PRICE, SUM (SCOUPON_PRICE) SCOUPON_PRICE, SUM (ORDER_PRICE) ORDER_PRICE, SUM (COMMITION) COMMITION, SUM (SETTLE_DEPT) SETTLE_DEPT, SUM (TAX_AMOUNT) TAX_AMOUT, SUM (SUPPLY_VALUE) SUPPLY_VALUE, SELLER_NAME, SELLER_NO
+		FROM (SELECT ORDER_NO, KCOUPON, SCOUPON, CK.COUPON_PRICE KCOUPON_PRICE, CS.COUPON_PRICE SCOUPON_PRICE, SE.SELLER_NO, ORDER_PRICE, SETTLE_DATE, COMMITION, SETTLE_DEPT, TAX_AMOUNT, SUPPLY_VALUE, PAYMENT_NO
+		    FROM(SELECT ORDER_NO, K.COUPON_NO KCOUPON, S.COUPON_NO SCOUPON, ORDER_PRICE
+		        FROM ORDERS
+		        LEFT JOIN KEYBOARDER_USE K USING(ORDER_NO)
+		        LEFT JOIN STORE_USE S USING(ORDER_NO)) O
+		    LEFT JOIN COUPON_KEYBOARDER CK ON (CK.COUPON_NO = KCOUPON)
+		    LEFT JOIN COUPON_STORE CS ON (CS.COUPON_NO = SCOUPON)
+		    JOIN SETTLEMENT SE USING (ORDER_NO)) Z
+		JOIN SELLER USING (SELLER_NO)
+		WHERE EXTRACT (YEAR FROM SETTLE_DATE) = EXTRACT(YEAR FROM TO_DATE(#{settleDate}, 'YYYY-MM-DD'))
+	      AND EXTRACT (MONTH FROM SETTLE_DATE) = EXTRACT(MONTH FROM TO_DATE(#{settleDate}, 'YYYY-MM-DD'))
+        GROUP BY SELLER_NAME, SELLER_NO, TO_CHAR(SETTLE_DATE, 'yyyy-mm')
+        ORDER BY SETTLE_DATE DESC
+	</select>
+
+	<select id="searchSellerCommition" parameterType="cws_settlement" resultMap="sellerResultSet">
+		SELECT TO_CHAR(SETTLE_DATE, 'yyyy-mm') SETTLE_DATE ,SUM (KCOUPON_PRICE) KCOUPON_PRICE, SUM (SCOUPON_PRICE) SCOUPON_PRICE, SUM (ORDER_PRICE) ORDER_PRICE, SUM (COMMITION) COMMITION, SUM (SETTLE_DEPT) SETTLE_DEPT, SUM (TAX_AMOUNT) TAX_AMOUT, SUM (SUPPLY_VALUE) SUPPLY_VALUE, SELLER_NAME, SELLER_NO
+		FROM (SELECT ORDER_NO, KCOUPON, SCOUPON, CK.COUPON_PRICE KCOUPON_PRICE, CS.COUPON_PRICE SCOUPON_PRICE, SE.SELLER_NO, ORDER_PRICE, SETTLE_DATE, COMMITION, SETTLE_DEPT, TAX_AMOUNT, SUPPLY_VALUE, PAYMENT_NO
+		    FROM(SELECT ORDER_NO, K.COUPON_NO KCOUPON, S.COUPON_NO SCOUPON, ORDER_PRICE
+		        FROM ORDERS
+		        LEFT JOIN KEYBOARDER_USE K USING(ORDER_NO)
+		        LEFT JOIN STORE_USE S USING(ORDER_NO)) O
+		    LEFT JOIN COUPON_KEYBOARDER CK ON (CK.COUPON_NO = KCOUPON)
+		    LEFT JOIN COUPON_STORE CS ON (CS.COUPON_NO = SCOUPON)
+		    JOIN SETTLEMENT SE USING (ORDER_NO)) Z
+		JOIN SELLER USING (SELLER_NO)
+		WHERE SELLER_NAME = #{sellerName}
+	      AND EXTRACT (YEAR FROM SETTLE_DATE) = EXTRACT(YEAR FROM TO_DATE(#{settleDate}, 'YYYY-MM-DD'))
+	      AND EXTRACT (MONTH FROM SETTLE_DATE) = EXTRACT(MONTH FROM TO_DATE(#{settleDate}, 'YYYY-MM-DD'))
+        GROUP BY SELLER_NAME, SELLER_NO, TO_CHAR(SETTLE_DATE, 'yyyy-mm')
+        ORDER BY SETTLE_DATE DESC
+	</select>
+	
+	<select id="sellerBillModal" parameterType="cws_settlement" resultMap="modalResultSet">
+		SELECT SUM(PRICE) PRICE, CORP_NO, SELLER_NAME, REP_NAME, LOCATION, SELLER_EMAIL, SELLER_PHONE, SUM(SUPPLY_VALUE) SUPPLY_VALUE, SUM(TAX_AMOUNT) TAX_AMOUNT, TO_CHAR(SETTLE_DATE, 'yyyy-mm') SETTLE_DATE
+		FROM (SELECT  CORP_NO
+					 , SELLER_NAME
+					 , REP_NAME
+					 , LOCATION
+					 , SELLER_EMAIL
+					 , SELLER_PHONE
+					 , SUPPLY_VALUE
+					 , TAX_AMOUNT
+					 , SETTLE_DATE
+					 , PRODUCT_NO
+				FROM SETTLEMENT
+		        JOIN ORDERS USING (ORDER_NO)
+				JOIN SELLER USING (SELLER_NO)) S
+		JOIN PRODUCT USING (PRODUCT_NO)
+         WHERE SELLER_NAME = #{sellerName}
+           AND TO_CHAR(SETTLE_DATE, 'yyyy-mm') = #{settleDate}
+        GROUP BY SELLER_NAME, CORP_NO, REP_NAME, LOCATION, SELLER_EMAIL, SELLER_PHONE, TO_CHAR(SETTLE_DATE, 'yyyy-mm')
+	</select>
+	
+	<select id="selectStoreSettlement" resultMap="storeResultSet">
+		SELECT SETTLE_DATE, A.SELLER_NO, SELLER_NAME, ORDER_PRICE, COMMITION, K.COUPON_PRICE KCOUPON_PRICE, S.COUPON_PRICE SCOUPON_PRICE, SETTLE_DEPT
+		FROM (SELECT SETTLE_DATE, SELLER_NO, SELLER_NAME, ORDER_PRICE, COMMITION, KU.COUPON_NO KCOUPON_NO, SU.COUPON_NO SCOUPON_NO, SETTLE_DEPT
+		        FROM SETTLEMENT
+		        JOIN ORDERS USING (ORDER_NO)
+		        JOIN SELLER USING (SELLER_NO)
+		        LEFT JOIN KEYBOARDER_USE KU USING (ORDER_NO)
+		        LEFT JOIN STORE_USE SU USING (ORDER_NO)) A
+		LEFT JOIN COUPON_KEYBOARDER K ON (KCOUPON_NO = K.COUPON_NO)
+		LEFT JOIN COUPON_STORE  S ON (SCOUPON_NO = S.COUPON_NO)
+		ORDER BY SETTLE_DATE DESC
+	</select>
+	
+	<select id="searchStoreSettlement" parameterType="cws_settlement" resultMap="storeResultSet">
+		SELECT SETTLE_DATE, A.SELLER_NO, SELLER_NAME, ORDER_PRICE, COMMITION, K.COUPON_PRICE KCOUPON_PRICE, S.COUPON_PRICE SCOUPON_PRICE, SETTLE_DEPT
+		FROM (SELECT SETTLE_DATE, SELLER_NO, SELLER_NAME, ORDER_PRICE, COMMITION, KU.COUPON_NO KCOUPON_NO, SU.COUPON_NO SCOUPON_NO, SETTLE_DEPT
+		        FROM SETTLEMENT
+		        JOIN ORDERS USING (ORDER_NO)
+		        JOIN SELLER USING (SELLER_NO)
+		        LEFT JOIN KEYBOARDER_USE KU USING (ORDER_NO)
+		        LEFT JOIN STORE_USE SU USING (ORDER_NO)) A
+		LEFT JOIN COUPON_KEYBOARDER K ON (KCOUPON_NO = K.COUPON_NO)
+		LEFT JOIN COUPON_STORE  S ON (SCOUPON_NO = S.COUPON_NO)
+        WHERE SELLER_NAME = #{sellerName}
+          AND SETTLE_DATE <![CDATA[>]]>= TO_DATE(#{settleDate}, 'YYYY-MM-DD')
+          AND SETTLE_DATE <![CDATA[<]]>= TO_DATE(#{searchSettleDate2}, 'YYYY-MM-DD')
+          ORDER BY SETTLE_DATE DESC
+	</select>
+	
+	
+</mapper>
+
+
+
+
+
+

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="poMapper">
+
+	<resultMap id="ProductResultSet" type="product">
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="PRICE" property="price" />
+		<result column="PRODUCT_STATUS" property="productStatus"/>
+		<result column="DESCRIPTION" property="description" />
+		<result column="ATTACHMENT1" property="attachment1" />
+		<result column="ATTACHMENT2" property="attachment2" />
+		<result column="ATTACHMENT3" property="attachment3" />
+		<result column="ATTACHMENT4" property="attachment4" />
+		<result column="SOLDOUT" property="soldOut" />
+		<result column="ONSALE" property="onSale" />
+	</resultMap>
+	
+	<!-- 이미지업로드 -->
+
+	<insert id="insertProduct" parameterType="product">
+		INSERT INTO PRODUCT(PRODUCT_NO
+						 , PRODUCT_NAME
+						 , PRICE
+						 , DESCRIPTION
+						 , ATTACHMENT1
+						 , ATTACHMENT2
+						 , ATTACHMENT3
+						 , ATTACHMENT4
+						 , SELLER_NO)			 
+				   VALUES (SEQ_PRODUCT_NO.NEXTVAL
+				   		 , #{productName}
+				   		 , #{price}
+				   		 , #{description}
+				   		 , #{attachment1}
+				   		 , #{attachment2}
+				   		 , #{attachment3}
+				   		 , #{attachment4}
+				   		 , #{sellerNo})
+		</insert>
+			
+								
+						<!-- 이미지 전체 조회 -->
+						<select id="showProduct" parameterType="product" resultMap="ProductResultSet">
+							   SELECT 
+							   PRODUCT_NO,
+							   PRODUCT_NAME,
+							   PRICE,
+							   PRODUCT_STATUS,
+						       ATTACHMENT1
+							   FROM PRODUCT
+							   WHERE SELLER_NO=#{sellerNo}
+						</select>
+						
+						<!-- 이미지 상세조회 -->
+						<select id="detailProduct" parameterType="_int" resultMap="ProductResultSet">
+							   SELECT
+							   PRODUCT_NO,
+							   PRODUCT_NAME,
+							   PRICE,
+							   DESCRIPTION,
+							   PRODUCT_STATUS,
+							   ATTACHMENT1,
+							   ATTACHMENT2,
+							   ATTACHMENT3,
+							   ATTACHMENT4	
+							  FROM PRODUCT
+							  WHERE PRODUCT_NO=#{productNo}
+						</select>
+						
+						
+						
+						<!-- 상품정보수정 -->
+						<update id ="updateProduct" parameterType="_int">
+						UPDATE PRODUCT
+						<set>
+						PRODUCT_NAME=#{productName},
+						PRICE=#{price},
+						DESCRIPTION=#{description},
+						ATTACHMENT1=#{attachment1},
+						<if test='attachment2!=null  and !attachment2.equalsIgnoreCase("null")'>ATTACHMENT2=#{attachment2},</if>
+						<if test='attachment3!=null  and !attachment3.equalsIgnoreCase("null")'>ATTACHMENT3=#{attachment3},</if>
+						<if test='attachment4!=null  and !attachment4.equalsIgnoreCase("null")'>ATTACHMENT4=#{attachment4}</if>
+						</set>
+						WHERE PRODUCT_NO = #{productNo}
+						</update>
+					
+					
+					<update id="deleteProduct" parameterType="_int">
+						UPDATE PRODUCT
+						SET PRODUCT_STATUS = 0
+						WHERE PRODUCT_NO = #{productNo}
+					</update>
+					
+					
+					<select id ="countProduct" parameterType="product" resultMap="ProductResultSet">
+					
+					
+					SELECT onsale.PRODUCT_NO as ONSALE,  
+					soldout.PRODUCT_NO as SOLDOUT
+					FROM (SELECT COUNT(*) PRODUCT_NO 
+					FROM PRODUCT WHERE SELLER_NO= #{sellerNo}
+					AND PRODUCT_STATUS=1) onsale, (SELECT COUNT(*) PRODUCT_NO FROM PRODUCT
+					WHERE SELLER_NO= #{sellerNo}
+        			AND PRODUCT_STATUS=0) soldout
+					
+					</select>
+					
+		
+					<select id="selectProduct" parameterType="product" resultMap="ProductResultSet">
+					   SELECT 
+					   PRODUCT_NO,
+					   PRODUCT_NAME,
+					   PRICE,
+					   PRODUCT_STATUS,
+				       ATTACHMENT1
+				       FROM PRODUCT
+				       WHERE PRODUCT_NAME LIKE '%' || #{productName} || '%' 
+				       
+					</select>
+					
+					<update id="changeProduct" parameterType="_int">
+						UPDATE PRODUCT
+						SET PRODUCT_STATUS = 1
+						WHERE PRODUCT_NO = #{productNo}
+					</update>
+					
+					
+									
+					<select id="getProductName" parameterType="_int" resultMap="ProductResultSet">
+						SELECT PRODUCT_NO
+							 , PRODUCT_NAME
+						FROM PRODUCT
+						WHERE SELLER_NO = #{sellerNo}
+						AND PRODUCT_STATUS = 1
+					</select>					
+					
+					
+					
+				</mapper>

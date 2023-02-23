@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="poorderMapper">
+
+	<resultMap id="poorderResultSet" type="poOrder">
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="ORDER_DATE" property="orderDate" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="CON_NO" property="conNo" />
+		<result column="SETTLE_DATE" property="settleDate" />
+		<result column="KMONEY_DATE" property="keyMoneyDate" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="CON_ID" property="conId" />
+		<result column="CON_NAME" property="conName" />
+		<result column="COMMISSION" property="commission" />
+		<result column="PRICE" property="price" />
+		<result column="COUPON_PRICE" property="couponPrice" />
+		<result column="PRODUCT_NO" property="productNo"/>
+		<result column="ORDER_STATUS" property="orderStatus"/>
+		<result column="KEYBOARDER_COUPON_PRICE" property="keyboarderCouponPrice"/>
+		<result column="MARKET_COUPON_PRICE" property="marketCouponPrice"/>
+		<result column="COMMITIONFIN" property="commitionFin"/>
+		<result column="SETTLE_DEPT" property="settleDept"/>
+		
+		<result column="SUPPLY_VALUE" property="supplyValue" />
+		<result column="COUPON_TYPE" property="couponType" />
+		<result column="PAYMENT_BILL" property="paymentBill" />
+		
+		<result column="PAYMENT_NO" property="paymentNo" />
+	</resultMap>
+	
+	<resultMap id="deliveryOrderResultSet" type="poOrder">
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="ORD_ORDER_DATE" property="orderDate" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="COUPON_YN" property="couponYN" />
+		<result column="ORDER_STATUS" property="orderStatus" />
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="CON_NO" property="conNo" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="PRICE" property="productPrice" />
+		<result column="K_COUPON_PRICE" property="keyCouponPrice" />
+		<result column="S_COUPON_PRICE" property="stoCouponPrice" />
+		<result column="CON_NAME" property="conName" />
+		<result column="CON_ID" property="conId" />
+		<result column="CON_PHONE" property="conPhone" />
+		<result column="COMMITION" property="commition" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="EXCEL_DATE" property="excelDate" />
+	</resultMap>
+	
+	<!-- 구매확정내역 전체조회(해당월)-장미 -->
+	<select id="selectDecisionOrder"  parameterType="poOrder" resultMap="poorderResultSet">
+		    SELECT *
+	        FROM (SELECT O.ORDER_NO "ORDER_NO"
+						                      , S.SETTLE_DATE "SETTLE_DATE"
+						                      , TO_CHAR((S.SETTLE_DATE)+1, 'YYYY-MM-DD') "KMONEY_DATE"
+						                      , O.PRODUCT_NO "PRODUCT_NO"
+						                      , P.PRODUCT_NAME "PRODUCT_NAME"
+						                      , O.ORDER_PRICE "ORDER_PRICE"
+						                      , C.CON_ID "CON_ID"
+						                      , C.CON_NAME "CON_NAME"
+						                      , TO_CHAR(O.ORDER_DATE, 'YYYY-MM') "MONTH"
+			              FROM ORDERS O
+			              LEFT JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+			              LEFT JOIN CONSUMER C ON (C.CON_NO = O.CON_NO)
+			              LEFT JOIN SETTLEMENT S ON (S.ORDER_NO = O.ORDER_NO)
+			              WHERE P.SELLER_NO = #{sellerNo}
+			              ORDER BY O.ORDER_DATE DESC)
+	         WHERE MONTH = #{nowMonth}
+	        ORDER BY ORDER_NO DESC
+	</select>
+	
+	
+		<!-- 정산 상세내역 조회 -->
+	<select id="selectSettleDetailList" parameterType="_int" resultMap="poorderResultSet">
+				  SELECT 
+                  O.ORDER_STATUS  as "ORDER_STATUS", 
+                  TO_CHAR(O.ORDER_DATE,'YYYY-MM-DD') as "ORDER_DATE",
+                  O.ORDER_NO as "ORDER_NO",
+                  C.CON_NAME as "CON_NAME",
+                  P.PRODUCT_NO as "PRODUCT_NO",
+                  P.PRODUCT_NAME as "PRODUCT_NAME",
+                  P.PRICE as "PRICE",
+                  COALESCE(B.COUPON_PRICE, M.COUPON_PRICE,0) as "COUPON_PRICE", 
+                  E.COMMITION as "COMMITION"
+                  FROM ORDERS O
+                  LEFT  JOIN PRODUCT P ON (O.PRODUCT_NO=P.PRODUCT_NO)
+                  LEFT  JOIN SELLER R ON (P.SELLER_NO=R.SELLER_NO)
+                  LEFT  JOIN SETTLEMENT E ON (O.ORDER_NO =E.ORDER_NO)
+                  LEFT  JOIN CONSUMER C ON(O.CON_NO=C.CON_NO)
+                  LEFT  JOIN STORE_USE S ON (O.ORDER_NO=S.ORDER_NO)
+                  LEFT  JOIN COUPON_STORE M ON (M.COUPON_NO=S.COUPON_NO)
+                  LEFT  JOIN KEYBOARDER_USE K ON (O.ORDER_NO=K.ORDER_NO)
+                  LEFT  JOIN COUPON_KEYBOARDER B ON (B.COUPON_NO=K.COUPON_NO) 
+                  LEFT JOIN STORE_USE S ON (O.ORDER_NO=S.ORDER_NO)
+                  LEFT  JOIN KEYBOARDER_USE T ON (O.ORDER_NO=T.ORDER_NO) 
+				  WHERE R.SELLER_NO = #{sellerNo}
+				 <if test="startDate!=null">
+				 	AND  ORDER_DATE BETWEEN #{startDate} AND #{endDate}
+				 </if> 
+	</select>
+			
+			<select id="selectSettleSumList" parameterType="_int" resultMap="poorderResultSet">
+			   	 SELECT 
+                 COUNT(O.ORDER_NO) as "ORDER_NO",
+                 SUM(O.ORDER_PRICE) as "ORDER_PRICE",
+                 SUM(B.COUPON_PRICE) as "KEYBOARDER_COUPON_PRICE",
+                 SUM(M.COUPON_PRICE) as "MARKET_COUPON_PRICE",
+                 SUM(E.COMMITION +COALESCE(B.COUPON_PRICE,0 ))as "COMMITIONFIN",
+                 SUM(B.COUPON_PRICE) as "KEYBOARDER_COUPON_PRICE",
+                 SUM(E.COMMITION)as  "COMMITION",
+                 SUM(E.SETTLE_DEPT) as "SETTLE_DEPT"
+                 FROM ORDERS O
+                 LEFT  JOIN PRODUCT P ON (O.PRODUCT_NO=P.PRODUCT_NO)
+                 LEFT  JOIN SELLER R ON (P.SELLER_NO=R.SELLER_NO)
+                 LEFT  JOIN SETTLEMENT E ON (O.ORDER_NO =E.ORDER_NO)
+                 LEFT  JOIN CONSUMER C ON(O.CON_NO=C.CON_NO)
+                 LEFT  JOIN STORE_USE S ON (O.ORDER_NO=S.ORDER_NO)
+                 LEFT  JOIN COUPON_STORE M ON (M.COUPON_NO=S.COUPON_NO)
+                 LEFT  JOIN KEYBOARDER_USE K ON (O.ORDER_NO=K.ORDER_NO)
+                 LEFT  JOIN COUPON_KEYBOARDER B ON (B.COUPON_NO=K.COUPON_NO) 
+                 LEFT JOIN STORE_USE S ON (O.ORDER_NO=S.ORDER_NO)
+                 LEFT  JOIN KEYBOARDER_USE T ON (O.ORDER_NO=T.ORDER_NO) 
+				 WHERE R.SELLER_NO = #{sellerNo}
+		 		<if test="startDate!=null">
+				 	AND  ORDER_DATE BETWEEN #{startDate} AND #{endDate}
+				</if> 
+			</select>
+		
+				<!-- 구매확정내역 기간별 조회 - 장미 -->
+		<select id="searchPoOrderDecision" parameterType="poOrder" resultMap="poorderResultSet">
+				SELECT *
+				FROM (SELECT O.ORDER_NO "ORDER_NO"
+											, S.SETTLE_DATE "SETTLE_DATE"
+											, TO_CHAR((S.SETTLE_DATE)+1, 'YYYY-MM-DD') "KMONEY_DATE"
+											, O.PRODUCT_NO "PRODUCT_NO"
+											, P.PRODUCT_NAME "PRODUCT_NAME"
+											, O.ORDER_PRICE "ORDER_PRICE"
+											, C.CON_ID "CON_ID"
+											, C.CON_NAME "CON_NAME"
+											, P.SELLER_NO "SELLER_NO"
+								FROM ORDERS O
+								JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+								JOIN CONSUMER C ON (C.CON_NO = O.CON_NO)
+								JOIN SETTLEMENT S ON (S.ORDER_NO = O.ORDER_NO)
+								ORDER BY O.ORDER_DATE DESC)
+				WHERE SELLER_NO = #{sellerNo}
+					AND EXTRACT (YEAR FROM SETTLE_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+					AND EXTRACT (MONTH FROM SETTLE_DATE) = EXTRACT(MONTH FROM TO_DATE (#{searchDate}, 'YYYY-MM-DD'))	
+				ORDER BY ORDER_NO DESC
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			전체조회 배송중 개수 확인
+			* 주멋돌
+		 -->
+		<select id="orderStatus1" parameterType="_int" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{selNo}
+			  AND ORDER_STATUS = '1'
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			전체조회 배송완료 개수 확인
+			* 주멋돌
+		 -->
+		<select id="orderStatus2" parameterType="_int" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{selNo}
+			  AND ORDER_STATUS = '2'
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			전체조회 구매확정 개수 확인
+			* 주멋돌
+		 -->
+		<select id="orderStatus3" parameterType="_int" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{selNo}
+			  AND ORDER_STATUS = '3'
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			전체조회 환불 개수 확인
+			* 주멋돌
+		 -->
+		<select id="orderStatus4" parameterType="_int" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{selNo}
+			  AND ORDER_STATUS = '4'
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			전체조회 주문건수 확인
+			* 주멋돌
+		 -->
+		<select id="orderCount" parameterType="_int" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{selNo}
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			전체조회
+			* 주멋돌
+		 -->
+		<select id="orderList" parameterType="_int" resultMap="deliveryOrderResultSet">
+			SELECT DISTINCT ORD.ORDER_NO
+			     , ORD.ORDER_STATUS
+			     , ORD.ORDER_PRICE
+			     , TO_CHAR(ORD.ORDER_DATE, 'YY-MM-DD') AS "ORD_ORDER_DATE"
+			     , PRO.PRODUCT_NO
+			     , PRO.PRODUCT_NAME
+			     , PRO.PRICE
+			     , CONS.CON_ID
+			     , CONS.CON_NAME
+			     , CONS.CON_PHONE
+			     , KCOU.COUPON_PRICE AS "K_COUPON_PRICE"
+			     , SCOU.COUPON_PRICE AS "S_COUPON_PRICE"
+			     , ORD.ORDER_PRICE * 0.15 AS "COMMISSION"
+			     , SEL.SELLER_NAME
+			FROM ORDERS ORD
+			LEFT JOIN PRODUCT PRO ON (ORD.PRODUCT_NO = PRO.PRODUCT_NO)
+			LEFT JOIN CONSUMER CONS ON (ORD.CON_NO = CONS.CON_NO)
+			LEFT JOIN KEYBOARDER_USE KUSE ON (ORD.ORDER_NO = KUSE.ORDER_NO)
+			LEFT JOIN STORE_USE SUSE ON(ORD.ORDER_NO = SUSE.ORDER_NO)
+			LEFT JOIN COUPON_KEYBOARDER KCOU ON (KUSE.COUPON_NO = KCOU.COUPON_NO)
+			LEFT JOIN COUPON_STORE SCOU ON (SUSE.COUPON_NO = SCOU.COUPON_NO)
+			LEFT JOIN SELLER SEL ON (SEL.SELLER_NO = PRO.SELLER_NO)
+			WHERE PRO.SELLER_NO = #{selNo}
+			ORDER BY ORD_ORDER_DATE DESC
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			월별 조회
+			* 주멋돌
+		 -->
+		<select id="deliverySearchDate" parameterType="poOrder" resultMap="deliveryOrderResultSet">
+			SELECT DISTINCT ORD.ORDER_NO
+			     , ORD.ORDER_STATUS
+			     , ORD.ORDER_PRICE
+			     , TO_CHAR(ORD.ORDER_DATE, 'YY-MM-DD') AS "ORD_ORDER_DATE"
+			     , PRO.PRODUCT_NO
+			     , PRO.PRODUCT_NAME
+			     , PRO.PRICE
+			     , CONS.CON_ID
+			     , CONS.CON_NAME
+			     , CONS.CON_PHONE
+			     , KCOU.COUPON_PRICE AS "K_COUPON_PRICE"
+			     , SCOU.COUPON_PRICE AS "S_COUPON_PRICE"
+			     , ORD.ORDER_PRICE * 0.15 AS "COMMISSION"
+			     , SEL.SELLER_NAME
+			     , TO_CHAR(ORD.ORDER_DATE, 'MM') AS "EXCEL_DATE"
+			FROM ORDERS ORD
+			LEFT JOIN PRODUCT PRO ON (ORD.PRODUCT_NO = PRO.PRODUCT_NO)
+			LEFT JOIN CONSUMER CONS ON (ORD.CON_NO = CONS.CON_NO)
+			LEFT JOIN KEYBOARDER_USE KUSE ON (ORD.ORDER_NO = KUSE.ORDER_NO)
+			LEFT JOIN STORE_USE SUSE ON(ORD.ORDER_NO = SUSE.ORDER_NO)
+			LEFT JOIN COUPON_KEYBOARDER KCOU ON (KUSE.COUPON_NO = KCOU.COUPON_NO)
+			LEFT JOIN COUPON_STORE SCOU ON (SUSE.COUPON_NO = SCOU.COUPON_NO)
+			LEFT JOIN SELLER SEL ON (SEL.SELLER_NO = PRO.SELLER_NO)
+			WHERE PRO.SELLER_NO = #{sellerNo}
+			  AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+  			  AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+			ORDER BY ORD_ORDER_DATE DESC
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			월별조회 배송중 개수 확인
+			* 주멋돌
+		 -->
+		<select id="dateOrderStatus1" parameterType="poOrder" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{sellerNo}
+			  AND ORDER_STATUS = '1'
+			  AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+  			  AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			월별조회 배송완료 개수 확인
+			* 주멋돌
+		 -->
+		<select id="dateOrderStatus2" parameterType="poOrder" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{sellerNo}
+			  AND ORDER_STATUS = '2'
+			  AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+  			  AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			월별조회 구매확정 개수 확인
+			* 주멋돌
+		 -->
+		<select id="dateOrderStatus3" parameterType="poOrder" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{sellerNo}
+			  AND ORDER_STATUS = '3'
+			  AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+  			  AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			월별조회 환불 개수 확인
+			* 주멋돌
+		 -->
+		<select id="dateOrderStatus4" parameterType="poOrder" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{sellerNo}
+			  AND ORDER_STATUS = '4'
+			  AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+  			  AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		</select>
+		
+		<!-- 
+			PO 배송관리 
+			월별조회 주문건수 확인
+			* 주멋돌
+		 -->
+		<select id="dateOrderCount" parameterType="poOrder" resultType="_int">
+			SELECT COUNT(*)
+			FROM ORDERS
+			JOIN PRODUCT USING(PRODUCT_NO)
+			WHERE SELLER_NO = #{sellerNo}
+			AND EXTRACT (YEAR FROM ORDER_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+  			AND EXTRACT (MONTH FROM ORDER_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+		</select>
+		
+		<select id="selectListCount_default" parameterType="hashmap" resultType="_int">
+		SELECT COUNT(*)
+		  FROM ORDERS O
+		  JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+		 WHERE TO_CHAR(ORDER_DATE, 'YYYY-MM') = #{nowMonth}
+		   AND P.SELLER_NO = #{sellerNo}
+		</select>
+		
+		<select id="selectAllOrderList" parameterType="hashmap" resultMap="poorderResultSet">
+			SELECT A.*
+			  FROM (SELECT DISTINCT CASE WHEN O.ORDER_STATUS = '1' THEN '결제완료'
+			                             WHEN O.ORDER_STATUS = '2' THEN '배송완료'
+			                             WHEN O.ORDER_STATUS = '3' THEN '구매확정'
+			                             ELSE '환불'
+			                         END "ORDER_STATUS" <!-- 주문상태 -->
+			                      , TO_CHAR(O.ORDER_DATE, 'YYYY-MM-DD') "ORDER_DATE" <!-- 주문일시 -->
+			                      , O.ORDER_NO "ORDER_NO" <!-- 주문번호 -->
+			                      , P.PRODUCT_NAME "PRODUCT_NAME" <!-- 상품명 -->
+			                      , O.ORDER_PRICE "ORDER_PRICE" <!-- 주문금액 -->
+			                      , C.CON_ID "CON_ID" <!-- 구매자ID -->
+			                      , C.CON_NAME "CON_NAME" <!-- 구매자명 -->
+			                      , SETT.SETTLE_DATE "SETTLE_DATE" <!-- 구매확정일자 -->
+			                      , P.PRODUCT_NO "PRODUCT_NO" <!-- 상품번호 -->
+			                      , P.PRICE "PRICE" <!-- 실상품판매금액 -->
+			                      , ROUND(P.PRICE / 1.1) "SUPPLY_VALUE" <!--판매단가(공급가액) -> 상품금액 / 1.1 -->
+			                      , CASE WHEN C_STO.COUPON_PRICE IS NOT NULL THEN S.SELLER_NAME || ' 쿠폰' <!-- 스토어쿠폰을 사용한경우 -->
+			                             WHEN C_KEY.COUPON_PRICE IS NOT NULL THEN 'KEYBOAR-DER 쿠폰' <!-- 키보더쿠폰을 사용한경우 -->
+			                             ELSE '사용안함' <!-- 아무것도 안쓴경우 -->
+			                         END "COUPON_TYPE" <!-- 할인쿠폰종류 -->
+			                      , CASE WHEN C_STO.COUPON_PRICE IS NOT NULL THEN C_STO.COUPON_PRICE <!-- 스토어쿠폰을 사용한경우 -->
+			                             WHEN C_KEY.COUPON_PRICE IS NOT NULL THEN C_KEY.COUPON_PRICE <!-- 키보더쿠폰을 사용한경우 -->
+			                             ELSE 0 <!-- 아무것도 안쓴경우 -->
+			                         END "COUPON_PRICE" <!-- 할인금액 -->
+			                      , PAY.PAYMENT_BILL "PAYMENT_BILL" <!-- 정산기준금액(결제금액) -->
+			                      , S.SELLER_NO "SELLER_NO" <!-- WHERE절의 판매자 비교를 위한 데이터 추출 -->
+			                      , TO_CHAR(O.ORDER_DATE, 'YYYY-MM') "MONTH" <!-- WHERE절의 날짜 비교를 위한 데이터 추출 -->
+			                      , PAY.PAYMENT_NO
+			                      , SETT.COMMITION "COMMISSION"
+			                   FROM ORDERS O
+			                   JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+			                   JOIN CONSUMER C ON (O.CON_NO = C.CON_NO)
+			                   JOIN PAYMENT PAY ON (O.ORDER_NO = PAY.ORDER_NO)
+			                   JOIN SETTLEMENT SETT ON (O.ORDER_NO = SETT.ORDER_NO)
+			                   JOIN SELLER S ON (P.SELLER_NO = S.SELLER_NO)
+			                   LEFT JOIN STORE_USE STO_U ON (O.ORDER_NO = STO_U.ORDER_NO) 
+			                   LEFT JOIN COUPON_STORE C_STO ON (STO_U.COUPON_NO = C_STO.COUPON_NO)
+			                   LEFT JOIN KEYBOARDER_USE KEY_U ON (O.ORDER_NO = KEY_U.ORDER_NO)
+			                   LEFT JOIN COUPON_KEYBOARDER C_KEY ON (KEY_U.COUPON_NO = C_KEY.COUPON_NO)
+			                    ORDER BY ORDER_DATE DESC) A
+			WHERE A.SELLER_NO = #{sellerNo}
+			  AND A.MONTH = #{nowMonth}
+		</select>
+		
+		<select id="selectOrderList" parameterType="hashmap" resultMap="poorderResultSet">
+			SELECT A.*
+			  FROM (SELECT DISTINCT CASE WHEN O.ORDER_STATUS = '1' THEN '결제완료'
+			                             WHEN O.ORDER_STATUS = '2' THEN '배송완료'
+			                             WHEN O.ORDER_STATUS = '3' THEN '구매확정'
+			                             ELSE '환불'
+			                         END "ORDER_STATUS" <!-- 주문상태 -->
+			                      , TO_CHAR(O.ORDER_DATE, 'YYYY-MM-DD') "ORDER_DATE" <!-- 주문일시 -->
+			                      , O.ORDER_NO "ORDER_NO" <!-- 주문번호 -->
+			                      , P.PRODUCT_NAME "PRODUCT_NAME" <!-- 상품명 -->
+			                      , O.ORDER_PRICE "ORDER_PRICE" <!-- 주문금액 -->
+			                      , C.CON_ID "CON_ID" <!-- 구매자ID -->
+			                      , C.CON_NAME "CON_NAME" <!-- 구매자명 -->
+			                      , SETT.SETTLE_DATE "SETTLE_DATE" <!-- 구매확정일자 -->
+			                      , P.PRODUCT_NO "PRODUCT_NO" <!-- 상품번호 -->
+			                      , P.PRICE "PRICE" <!-- 실상품판매금액 -->
+			                      , ROUND(P.PRICE / 1.1) "SUPPLY_VALUE" <!-- 판매단가(공급가액) -> 상품금액 / 1.1 -->
+			                      , CASE WHEN C_STO.COUPON_PRICE IS NOT NULL THEN S.SELLER_NAME || ' 쿠폰' <!-- 스토어쿠폰을 사용한경우 -->
+			                             WHEN C_KEY.COUPON_PRICE IS NOT NULL THEN 'KEYBOAR-DER 쿠폰' <!-- 키보더쿠폰을 사용한경우 -->
+			                             ELSE '사용안함' <!-- 아무것도 안쓴경우 -->
+			                         END "COUPON_TYPE" <!-- 할인쿠폰종류 -->
+			                      , CASE WHEN C_STO.COUPON_PRICE IS NOT NULL THEN C_STO.COUPON_PRICE <!-- 스토어쿠폰을 사용한경우 -->
+			                             WHEN C_KEY.COUPON_PRICE IS NOT NULL THEN C_KEY.COUPON_PRICE <!-- 키보더쿠폰을 사용한경우 -->
+			                             ELSE 0 <!-- 아무것도 안쓴경우 -->
+			                         END "COUPON_PRICE" <!-- 할인금액 -->
+			                      , PAY.PAYMENT_BILL "PAYMENT_BILL" <!-- 정산기준금액(결제금액) -->
+			                      , S.SELLER_NO "SELLER_NO" <!-- WHERE절의 판매자 비교를 위한 데이터 추출 -->
+			                      , PAY.PAYMENT_NO
+			                      , SETT.COMMITION "COMMISSION"
+			                   FROM ORDERS O
+			                   JOIN PRODUCT P ON (O.PRODUCT_NO = P.PRODUCT_NO)
+			                   JOIN CONSUMER C ON (O.CON_NO = C.CON_NO)
+			                   JOIN PAYMENT PAY ON (O.ORDER_NO = PAY.ORDER_NO)
+			                   JOIN SETTLEMENT SETT ON (O.ORDER_NO = SETT.ORDER_NO)
+			                   JOIN SELLER S ON (P.SELLER_NO = S.SELLER_NO)
+			                   LEFT JOIN STORE_USE STO_U ON (O.ORDER_NO = STO_U.ORDER_NO) 
+			                   LEFT JOIN COUPON_STORE C_STO ON (STO_U.COUPON_NO = C_STO.COUPON_NO)
+			                   LEFT JOIN KEYBOARDER_USE KEY_U ON (O.ORDER_NO = KEY_U.ORDER_NO)
+			                   LEFT JOIN COUPON_KEYBOARDER C_KEY ON (KEY_U.COUPON_NO = C_KEY.COUPON_NO)
+			                    ORDER BY ORDER_DATE DESC) A
+			WHERE A.SELLER_NO = #{sellerNo}
+			  AND TO_DATE(ORDER_DATE, 'YYYY-MM-DD')
+			      BETWEEN TO_DATE(#{currentDate}, 'YYYY-MM-DD') AND TO_DATE(#{endDate}, 'YYYY-MM-DD')
+			      <if test="keyword != ''">
+			      	<choose>
+			      		<when test="keywordType == 'keyword_orderNo'">
+			      			AND ORDER_NO LIKE '%' || #{keyword} || '%'
+			      		</when>
+			      		<when test="keywordType == 'keyword_productName'">
+			      			AND PRODUCT_NAME LIKE '%' || #{keyword} || '%'
+			      		</when>
+			      		<when test="keywordType == 'keyword_conName'">
+			      			AND CON_NAME LIKE '%' || #{keyword} || '%'
+			      		</when>
+			      	</choose>
+			      </if>
+		</select>
+		
+		<!-- 엑셀다운로드 해당월(기본) -->
+		<select id="orderDecisionList" parameterType="poOrder" resultMap="poorderResultSet">
+			SELECT *
+	        FROM (SELECT O.ORDER_NO "ORDER_NO"
+						                      , S.SETTLE_DATE "SETTLE_DATE"
+						                      , TO_CHAR((S.SETTLE_DATE)+1) "KMONEY_DATE"
+						                      , O.PRODUCT_NO "PRODUCT_NO"
+						                      , P.PRODUCT_NAME "PRODUCT_NAME"
+						                      , O.ORDER_PRICE "ORDER_PRICE"
+						                      , C.CON_ID "CON_ID"
+						                      , C.CON_NAME "CON_NAME"
+						                      , TO_CHAR(O.ORDER_DATE, 'YYYY-MM') "MONTH"
+			              FROM ORDERS O
+			              LEFT JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+			              LEFT JOIN CONSUMER C ON (C.CON_NO = O.CON_NO)
+			              LEFT JOIN SETTLEMENT S ON (S.ORDER_NO = O.ORDER_NO)
+			              WHERE P.SELLER_NO = #{sellerNo}
+			              ORDER BY O.ORDER_DATE DESC)
+	         WHERE MONTH = #{nowMonth}
+	        ORDER BY ORDER_NO DESC
+		</select>
+		
+		<!--  엑셀다운로드 기간별조회 - 장미 -->
+		<select id="searchExcelDecisionList" parameterType="poOrder" resultMap="poorderResultSet">
+			SELECT *
+			FROM (SELECT O.ORDER_NO "ORDER_NO"
+										, S.SETTLE_DATE "SETTLE_DATE"
+										, TO_CHAR((S.SETTLE_DATE)+1) "KMONEY_DATE"
+										, O.PRODUCT_NO "PRODUCT_NO"
+										, P.PRODUCT_NAME "PRODUCT_NAME"
+										, O.ORDER_PRICE "ORDER_PRICE"
+										, C.CON_ID "CON_ID"
+										, C.CON_NAME "CON_NAME"
+										, P.SELLER_NO "SELLER_NO"
+							FROM ORDERS O
+							JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+							JOIN CONSUMER C ON (C.CON_NO = O.CON_NO)
+							JOIN SETTLEMENT S ON (S.ORDER_NO = O.ORDER_NO)
+							ORDER BY O.ORDER_DATE DESC)
+			WHERE SELLER_NO = #{sellerNo}
+				AND EXTRACT (YEAR FROM SETTLE_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM-DD'))
+				AND EXTRACT (MONTH FROM SETTLE_DATE) = EXTRACT(MONTH FROM TO_DATE (#{searchDate}, 'YYYY-MM-DD'))	
+			ORDER BY ORDER_NO DESC
+		</select>
+
+	<select id="selectRefundAmount" parameterType="poOrder" resultType="_int">
+		SELECT PAYMENT_BILL
+		FROM PAYMENT
+		WHERE PAYMENT_NO = #{paymentNo}
+		AND ORDER_NO = #{orderNo}
+	</select>
+	
+	<update id="refundOrder" parameterType="poOrder">
+		UPDATE ORDERS
+		SET ORDER_STATUS = 4
+		WHERE ORDER_NO = #{orderNo}
+	</update>
+	
+	<update id="refundPayment" parameterType="poOrder">
+		UPDATE PAYMENT
+		SET PAYMENT_STATUS = 'N'
+		  , REFUND_DATE = SYSDATE
+		WHERE PAYMENT_NO = #{paymentNo}
+		AND ORDER_NO = #{orderNo}
+	</update>
+	
+	
+	<!-- 정산 상세내역 기간별 조회 -->
+	<select id="excelDownloadSettlementDetail" parameterType="_int" resultMap="poorderResultSet">
+				  SELECT 
+                  O.ORDER_STATUS  as "ORDER_STATUS", 
+                  O.ORDER_DATE as "ORDER_DATE",
+                  O.ORDER_NO as "ORDER_NO",
+                  C.CON_NAME as "CON_NAME",
+                  P.PRODUCT_NO as "PRODUCT_NO",
+                  P.PRODUCT_NAME as "PRODUCT_NAME",
+                  P.PRICE as "PRICE",
+                  COALESCE(B.COUPON_PRICE, M.COUPON_PRICE,0) as "COUPON_PRICE", 
+                  E.COMMITION as "COMMITION"
+                  FROM ORDERS O
+                  LEFT  JOIN PRODUCT P ON (O.PRODUCT_NO=P.PRODUCT_NO)
+                  LEFT  JOIN SELLER R ON (P.SELLER_NO=R.SELLER_NO)
+                  LEFT  JOIN SETTLEMENT E ON (O.ORDER_NO =E.ORDER_NO)
+                  LEFT  JOIN CONSUMER C ON(O.CON_NO=C.CON_NO)
+                  LEFT  JOIN STORE_USE S ON (O.ORDER_NO=S.ORDER_NO)
+                  LEFT  JOIN COUPON_STORE M ON (M.COUPON_NO=S.COUPON_NO)
+                  LEFT  JOIN KEYBOARDER_USE K ON (O.ORDER_NO=K.ORDER_NO)
+                  LEFT  JOIN COUPON_KEYBOARDER B ON (B.COUPON_NO=K.COUPON_NO) 
+                  LEFT JOIN STORE_USE S ON (O.ORDER_NO=S.ORDER_NO)
+                  LEFT  JOIN KEYBOARDER_USE T ON (O.ORDER_NO=T.ORDER_NO) 
+				  WHERE R.SELLER_NO = #{sellerNo}
+				 <if test="startDate!=null">
+				 	AND  ORDER_DATE BETWEEN #{startDate} AND #{endDate}
+				 </if> 
+	</select>
+</mapper>

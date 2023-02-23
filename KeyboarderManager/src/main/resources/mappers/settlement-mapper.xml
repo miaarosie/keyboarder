@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="settlementMapper">
+
+	<resultMap id="withdrawResultSet" type="withdraw">
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="WITHDRAW_DATE" property="withdrawDate" />
+		<result column="WITHDRAW_MONEY" property="withdrawMoney" />
+		<result column="ACCOUNT_NO" property="accountNo" />
+		<result column="REP_NAME" property="repName" />
+		<result column="REQ_RESULT" property="reqResult" />
+		<result column="SELLER_NAME" property="sellerName" />
+	</resultMap>
+	
+	<resultMap id="settlementResultSet" type="settlement">
+		<result column="ALL_BALANCE" property="allBalance" />
+		<result column="CONFIRM_SETTLEMENT" property="confirmSettlement" />
+		<result column="PRE_SETTLEMENT" property="preSettlement" />
+		<result column="REMIT_BALANCE" property="remitBalance" />
+		<result column="ABLE_BALANCE" property="ableBalance" />
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="SETTLE_DATE" property="settleDate" />
+		<result column="PRICE" property="price" />
+		<result column="KEYBOARDER_COUPON_PRICE" property="keyCouponPrice"/>
+		<result column="STORE_COUPON_PRICE" property="stoCouponPrice" />
+		<result column="COUPON_PRICE" property="couponPrice" />
+		<result column="COMMISSION" property="commission" />
+		<result column="SETTLE_DEPT" property="settleDept"/>
+		<result column="PAYMENT_BILL" property="paymentBill"/>
+		<result column ="SELLER_NO" property="sellerNo" />
+		<result column="PRODUCT_NO" property="productNo" />
+	</resultMap>
+	
+	<resultMap id="settlementElectronicResultSet" type="settlement">
+		<result column="SETTLE_DATE" property="settleDate" />
+		<result column="TAX_AMOUNT" property="taxAmount" />
+		<result column="SUPPLY_VALUE" property="supplyValue" />
+		<result column ="SELLER_NAME" property="sellerName" />
+		<result column="COMMISSION" property="commission" />
+		<result column ="SELLER_NO" property="sellerNo" />
+	</resultMap>
+	
+	<resultMap id="modalResultSet" type="settlement">
+		<result column="PRICE" property="price" />
+		<result column="CORP_NO" property="corpNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="REP_NAME" property="repName" />
+		<result column="LOCATION" property="location" />
+		<result column="SELLER_EMAIL" property="sellerEmail" />
+		<result column="SELLER_PHONE" property="sellerPhone" />
+		<result column="SUPPLY_VALUE" property="supplyValue" />
+		<result column="TAX_AMOUNT" property="taxAmount" />
+		<result column="SETTLE_DATE" property="settleDate" /> 
+	</resultMap>
+	
+	<resultMap id="commissionResultSet" type="settlement">
+		<result column="MONTHLY" property="settleDate" />
+		<result column="MONTHLY_COMMITION" property="commition" />
+		<result column="MONTHLY_DISCOUNT" property="keyCouponPrice" />
+	</resultMap>
+	
+	<insert id="insertWithdraw" parameterType="withdraw">
+		INSERT INTO WITHDRAW (SELLER_NO
+							, WITHDRAW_MONEY
+							, ACCOUNT_NO
+							, REP_NAME
+							, REQ_RESULT)
+		VALUES (#{sellerNo}
+			  , #{withdrawMoney}
+			  , #{accountNo}
+			  , #{repName}
+			  , 'N')
+	</insert>
+	
+	<select id="selectWithdrawRequestList" parameterType="withdraw" resultMap="withdrawResultSet">
+		SELECT SELLER_NAME
+			 , TO_CHAR(WITHDRAW_DATE, 'YYYY-MM-DD HH24:mm:SS') AS "WITHDRAW_DATE"
+			 , WITHDRAW_MONEY
+			 , W.ACCOUNT_NO AS "ACCOUNT_NO"
+			 , W.REP_NAME AS "REP_NAME"
+			 , REQ_RESULT
+		FROM WITHDRAW W
+		JOIN SELLER S ON (W.SELLER_NO = S.SELLER_NO)
+		WHERE W.SELLER_NO = #{sellerNo}
+		AND WITHDRAW_DATE BETWEEN #{startDate} AND #{endDate}
+		ORDER BY WITHDRAW_DATE DESC
+	</select>
+	
+	<select id="selectKmoneySettlement" parameterType="_int" resultMap="settlementResultSet">
+		select nvl(a.a, 0) AS "ALL_BALANCE"
+			 , nvl(b.b, 0) AS "CONFIRM_SETTLEMENT"
+			 , nvl(c.c, 0) AS "PRE_SETTLEMENT"
+			 , nvl(d.d, 0) AS "REMIT_BALANCE"
+    		 , (nvl(b.b, 0) - nvl(d.d, 0)) AS "ABLE_BALANCE"
+		from 
+		(select sum(settle_dept) a
+		from settlement
+		join orders using (order_no)
+		where order_status != 4
+		and seller_no = #{sellerNo}) a,
+		
+		(select sum(settle_dept) b
+		from settlement
+		join orders using (order_no)
+		where order_status = 3
+		and seller_no = #{sellerNo}) b,
+		
+		(select sum(settle_dept) c
+		from settlement
+		join orders using (order_no)
+		where order_status in (1, 2)
+		and seller_no = #{sellerNo}) c,
+		
+		(select sum(withdraw_money) d
+		from withdraw
+		where seller_no = #{sellerNo}
+		and req_result = 'N') d
+	</select>
+	
+	<!-- 정산전체내역 조회 -장미  -->
+	<select id="selectSettleTotalList" parameterType="settlement" resultMap="settlementResultSet">
+		SELECT DISTINCT * 
+		FROM (SELECT S.ORDER_NO
+		                    , TO_CHAR(S.SETTLE_DATE , 'YY/MM/DD') "SETTLE_DATE"
+		                    , P.PRODUCT_NO "PRODUCT_NO"
+		                    , P.PRICE "PRICE"
+		                    , PAY.PAYMENT_BILL "PAYMENT_BILL"
+		                    , S.COMMITION "COMMITION"                   
+		                     , KEY.COUPON_PRICE "KEYBOARDER_COUPON_PRICE"
+                    		, M.COUPON_PRICE "STORE_COUPON_PRICE"
+		                    , S.SETTLE_DEPT "SETTLE_DEPT"
+		                    , TO_CHAR(S.SETTLE_DATE, 'YYYY-MM') "MONTH"
+		            FROM SETTLEMENT S
+		            LEFT JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+		            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+		            LEFT JOIN PAYMENT PAY ON (S.ORDER_NO = PAY.ORDER_NO)
+		            LEFT JOIN KEYBOARDER_USE K ON (S.ORDER_NO = K.ORDER_NO)
+		            LEFT JOIN COUPON_KEYBOARDER KEY ON (K.COUPON_NO = KEY.COUPON_NO)
+		            LEFT JOIN STORE_USE SU ON (S.ORDER_NO = SU.ORDER_NO)
+		            LEFT JOIN COUPON_STORE M ON (SU.COUPON_NO = M.COUPON_NO)
+		            WHERE S.SELLER_NO = #{sellerNo}
+		            ORDER BY S.SETTLE_DATE DESC )
+		WHERE MONTH = #{nowMonth}
+		ORDER BY ORDER_NO DESC
+	</select>
+	
+	<!-- 정산내역 기간조회 -장미  -->
+	<select id="searchSettleList" parameterType="settlement" resultMap="settlementResultSet">
+		SELECT DISTINCT * 
+		FROM (SELECT S.ORDER_NO
+		                    , TO_CHAR(S.SETTLE_DATE , 'YYYY-MM-DD') "SETTLE_DATE"
+		                    , P.PRODUCT_NO "PRODUCT_NO"
+		                    , P.PRICE "PRICE"
+		                    , PAY.PAYMENT_BILL "PAYMENT_BILL"
+		                    , S.COMMITION "COMMITION"                   
+		                     , KEY.COUPON_PRICE "KEYBOARDER_COUPON_PRICE"
+                    		, M.COUPON_PRICE "STORE_COUPON_PRICE"
+		                    , S.SETTLE_DEPT "SETTLE_DEPT"
+		                    , S.SELLER_NO "SELLER_NO"
+			            FROM SETTLEMENT S
+			            LEFT JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+			            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+			            LEFT JOIN PAYMENT PAY ON (S.ORDER_NO = PAY.ORDER_NO)
+			            LEFT JOIN KEYBOARDER_USE K ON (S.ORDER_NO = K.ORDER_NO)
+			            LEFT JOIN COUPON_KEYBOARDER KEY ON (K.COUPON_NO = KEY.COUPON_NO)
+			            LEFT JOIN STORE_USE SU ON (S.ORDER_NO = SU.ORDER_NO)
+			            LEFT JOIN COUPON_STORE M ON (SU.COUPON_NO = M.COUPON_NO)		
+			            ORDER BY S.SETTLE_DATE DESC )
+			    WHERE SELLER_NO = #{sellerNo}	
+				AND SUBSTR (SETTLE_DATE, 1, 7) =SUBSTR(#{searchDate}, 1, 7)
+		ORDER BY ORDER_NO DESC
+	</select>
+	
+	<!-- 정산내역 전체(당월)조회 엑셀다운로드 -장미 -->
+	<select id="settleExcelTotalList" parameterType="settlement" resultMap="settlementResultSet">
+		SELECT DISTINCT * 
+		FROM (SELECT S.ORDER_NO
+		                    , TO_CHAR(S.SETTLE_DATE , 'YY/MM/DD') "SETTLE_DATE"
+		                    , P.PRODUCT_NO "PRODUCT_NO"
+		                    , P.PRICE "PRICE"
+		                    , PAY.PAYMENT_BILL "PAYMENT_BILL"
+		                    , S.COMMITION "COMMITION"                   
+		                     , KEY.COUPON_PRICE "KEYBOARDER_COUPON_PRICE"
+                    		, M.COUPON_PRICE "STORE_COUPON_PRICE"
+		                    , S.SETTLE_DEPT "SETTLE_DEPT"
+		                    , TO_CHAR(S.SETTLE_DATE, 'YYYY-MM') "MONTH"
+		            FROM SETTLEMENT S
+		            LEFT JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+		            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+		            LEFT JOIN PAYMENT PAY ON (S.ORDER_NO = PAY.ORDER_NO)
+		            LEFT JOIN KEYBOARDER_USE K ON (S.ORDER_NO = K.ORDER_NO)
+		            LEFT JOIN COUPON_KEYBOARDER KEY ON (K.COUPON_NO = KEY.COUPON_NO)
+		            LEFT JOIN STORE_USE SU ON (S.ORDER_NO = SU.ORDER_NO)
+		            LEFT JOIN COUPON_STORE M ON (SU.COUPON_NO = M.COUPON_NO)
+		            WHERE S.SELLER_NO = #{sellerNo}
+		            ORDER BY S.SETTLE_DATE DESC )
+		WHERE MONTH = #{nowMonth}
+		ORDER BY ORDER_NO DESC
+	</select>
+	
+	<!--  정산내역 기간조회 엑셀다운로드 -장미 -->
+	<select id="searchSettleExcelList" parameterType="settlement" resultMap="settlementResultSet">
+		SELECT DISTINCT * 
+		FROM (SELECT S.ORDER_NO
+		                    , TO_CHAR(S.SETTLE_DATE , 'YYYY-MM-DD') "SETTLE_DATE"
+		                    , P.PRODUCT_NO "PRODUCT_NO"
+		                    , P.PRICE "PRICE"
+		                    , PAY.PAYMENT_BILL "PAYMENT_BILL"
+		                    , S.COMMITION "COMMITION"                   
+		                     , KEY.COUPON_PRICE "KEYBOARDER_COUPON_PRICE"
+                    		, M.COUPON_PRICE "STORE_COUPON_PRICE"
+		                    , S.SETTLE_DEPT "SETTLE_DEPT"
+		                    , S.SELLER_NO "SELLER_NO"
+			            FROM SETTLEMENT S
+			            LEFT JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+			            LEFT JOIN PRODUCT P ON (P.PRODUCT_NO = O.PRODUCT_NO)
+			            LEFT JOIN PAYMENT PAY ON (S.ORDER_NO = PAY.ORDER_NO)
+			            LEFT JOIN KEYBOARDER_USE K ON (S.ORDER_NO = K.ORDER_NO)
+			            LEFT JOIN COUPON_KEYBOARDER KEY ON (K.COUPON_NO = KEY.COUPON_NO)
+			            LEFT JOIN STORE_USE SU ON (S.ORDER_NO = SU.ORDER_NO)
+			            LEFT JOIN COUPON_STORE M ON (SU.COUPON_NO = M.COUPON_NO)		
+			            ORDER BY S.SETTLE_DATE DESC )
+			    WHERE SELLER_NO = #{sellerNo}	
+				AND SUBSTR (SETTLE_DATE, 1, 7) =SUBSTR(#{searchDate}, 1, 7)
+		ORDER BY ORDER_NO DESC
+	</select>
+	
+	<select id="selectCommissionList" parameterType="hashmap" resultMap="commissionResultSet">
+		SELECT DISTINCT SUM(S.COMMITION) "MONTHLY_COMMITION"
+		              , SUM(C_KEY.COUPON_PRICE) "MONTHLY_DISCOUNT"
+		  FROM SETTLEMENT S
+		  JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+		  LEFT JOIN KEYBOARDER_USE KEY_U ON (KEY_U.ORDER_NO = O.ORDER_NO)
+		  LEFT JOIN COUPON_KEYBOARDER C_KEY ON (C_KEY.COUPON_NO = KEY_U.COUPON_NO)
+		 WHERE S.SELLER_NO = #{sellerNo}
+		   AND TO_CHAR(SETTLE_DATE, 'YYYY-MM') = #{lastMonth}
+	</select>
+	
+	<select id="selectCommissionList_Option" parameterType="hashmap" resultMap="commissionResultSet">
+		SELECT DISTINCT TO_CHAR(SETTLE_DATE, 'YYYY-MM') "MONTHLY"
+		              , SUM(S.COMMITION) "MONTHLY_COMMITION"
+		              , SUM(C_KEY.COUPON_PRICE) "MONTHLY_DISCOUNT"
+		  FROM SETTLEMENT S
+		  JOIN ORDERS O ON (S.ORDER_NO = O.ORDER_NO)
+		  LEFT JOIN KEYBOARDER_USE KEY_U ON (KEY_U.ORDER_NO = O.ORDER_NO)
+		  LEFT JOIN COUPON_KEYBOARDER C_KEY ON (C_KEY.COUPON_NO = KEY_U.COUPON_NO)
+		 WHERE S.SELLER_NO = #{sellerNo}
+		   AND TO_DATE(TO_CHAR(SETTLE_DATE, 'YYYY-MM'), 'YYYY-MM')
+		       BETWEEN TO_DATE(#{currentMonth}, 'YYYY-MM') AND TO_DATE(#{endMonth}, 'YYYY-MM')
+		 GROUP BY TO_CHAR(SETTLE_DATE, 'YYYY-MM')
+		 ORDER BY MONTHLY DESC
+	</select>
+	
+	<!-- 
+		PO 전자세금 계산서 모달창 팝업
+		* 주멋돌
+	-->
+	<select id="sellerBillModal" parameterType="settlement" resultMap="modalResultSet">
+		SELECT SUM(PRICE) PRICE, CORP_NO, SELLER_NAME, REP_NAME, LOCATION, SELLER_EMAIL, SELLER_PHONE, SUM(SUPPLY_VALUE) SUPPLY_VALUE, SUM(TAX_AMOUNT) TAX_AMOUNT, TO_CHAR(SETTLE_DATE, 'yyyy-mm') SETTLE_DATE
+		FROM (SELECT  CORP_NO
+					 , SELLER_NAME
+					 , REP_NAME
+					 , LOCATION
+					 , SELLER_EMAIL
+					 , SELLER_PHONE
+					 , SUPPLY_VALUE
+					 , TAX_AMOUNT
+					 , SETTLE_DATE
+					 , PRODUCT_NO
+				FROM SETTLEMENT
+		        JOIN ORDERS USING (ORDER_NO)
+				JOIN SELLER USING (SELLER_NO)) S
+		JOIN PRODUCT USING (PRODUCT_NO)
+         WHERE SELLER_NAME = #{sellerName}
+           AND TO_CHAR(SETTLE_DATE, 'yyyy-mm') = #{settleDate}
+        GROUP BY SELLER_NAME, CORP_NO, REP_NAME, LOCATION, SELLER_EMAIL, SELLER_PHONE, TO_CHAR(SETTLE_DATE, 'yyyy-mm')
+	</select>
+
+	<!-- 
+		PO 전자세금 계산서 전체 조회
+		* 주멋돌
+	-->
+	<select id="selectElectronicList" parameterType="_int" resultMap="settlementElectronicResultSet">
+			SELECT SETTLE_DATE
+			     , (SUM(COMMITION) - (SUM(COMMITION) / 1.1) + 1) TAX_AMOUNT
+			     , SUM(COMMITION) / 1.1 SUPPLY_VALUE
+			     , SUM(COMMITION) COMMITION
+			     , SELLER_NAME
+			FROM(SELECT TO_CHAR(SETTLE_DATE, 'YYYY-MM') SETTLE_DATE
+			     , TAX_AMOUNT
+			     , SUPPLY_VALUE
+			     , SELLER_NAME
+			     , COMMITION
+			FROM SETTLEMENT
+			JOIN SELLER SL USING(SELLER_NO)
+			WHERE SELLER_NO = #{selNo})
+			GROUP BY SETTLE_DATE, SELLER_NAME 
+			ORDER BY SETTLE_DATE DESC
+	</select>
+	
+	<!-- 
+		PO 전자세금 계산서 월 선택 시 해당 월 조회
+		* 주멋돌
+	-->
+	<select id="selectElectronicDateList" parameterType="settlement" resultMap="settlementElectronicResultSet">
+		SELECT SETTLE_DATE
+		     , (SUM(COMMITION) - (SUM(COMMITION) / 1.1)) + 1 TAX_AMOUNT
+		     , SUM(COMMITION) / 1.1 SUPPLY_VALUE
+		     , SUM(COMMITION) COMMITION
+		     , SELLER_NAME
+		FROM(SELECT TO_CHAR(SETTLE_DATE, 'YYYY-MM') SETTLE_DATE
+		     , TAX_AMOUNT
+		     , SUPPLY_VALUE
+		     , SELLER_NAME
+		     , COMMITION
+		FROM SETTLEMENT
+		JOIN SELLER SL USING(SELLER_NO)
+		WHERE SELLER_NO = #{sellerNo}
+             AND EXTRACT (YEAR FROM SETTLE_DATE) = EXTRACT(YEAR FROM TO_DATE(#{searchDate}, 'YYYY-MM'))
+ 			  AND EXTRACT (MONTH FROM SETTLE_DATE) = EXTRACT(MONTH FROM TO_DATE(#{searchDate}, 'YYYY-MM')))
+		GROUP BY SETTLE_DATE, SELLER_NAME
+	</select>
+	
+</mapper>
+
+
+
+
+
+

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="boCouponMapper">
+
+	<resultMap id="boCouponResultMap" type="boCoupon">
+		<result column="COUPON_NO" property="couponNo" />
+		<result column="COUPON_NAME" property="couponName" />
+		<result column="COUPON_PRICE" property="couponPrice" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="DUE_DATE" property="dueDate" />
+		<result column="COUPON_STMT" property="couponStmt" />
+		<result column="PRODUCT_NO" property="productNo" />
+		<result column="PRODUCT_NAME" property="productName" />
+		<result column="ORDER_DATE" property="useDate" />
+		<result column="ORDER_PRICE" property="orderPrice" />
+		<result column="ORDER_NO" property="orderNo" />
+		<result column="PAYMENT_BILL" property="paymentBill" />
+		<result column="SELLER_NAME" property="sellerName" />
+	</resultMap>
+
+	<select id="selectCouponList" parameterType="boCoupon" resultMap="boCouponResultMap">
+		SELECT COUPON_NO
+	            , COUPON_NAME
+	            , COUPON_PRICE
+	            , TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE"
+	            , TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+	            , CASE WHEN COUPON_STMT = 'Y' THEN '사용가능'
+                       WHEN COUPON_STMT = 'N' THEN '사용불가'
+              	  END AS "COUPON_STMT"
+	            , C.PRODUCT_NO AS "PRODUCT_NO"
+	            , PRODUCT_NAME
+		FROM COUPON_KEYBOARDER C
+		JOIN PRODUCT P ON (P.PRODUCT_NO = C.PRODUCT_NO)
+		<choose>
+			<when test='couponStmt == "N"'>
+				WHERE COUPON_STMT = 'N'
+				<if test='startDate != null'>
+					AND CREATE_DATE BETWEEN #{startDate} AND #{endDate}
+				</if>
+			</when>
+			<when test='couponStmt == "Y"'>
+				WHERE COUPON_STMT = 'Y'
+				<if test='startDate != null'>
+					AND CREATE_DATE BETWEEN #{startDate} AND #{endDate}
+				</if>
+			</when>
+		</choose>
+		ORDER BY COUPON_NO DESC
+	</select>
+	
+	<insert id="insertCoupon" parameterType="boCoupon">
+		INSERT INTO COUPON_KEYBOARDER (COUPON_NO
+		                             , COUPON_NAME
+		                             , COUPON_PRICE
+		                             , CREATE_DATE
+		                             , DUE_DATE
+		                             , PRODUCT_NO)                             
+		VALUES('K'||SEQ_COUPON_KEYBOARDER_NO.NEXTVAL
+		     , #{couponName}
+		     , #{couponPrice}
+		     , #{createDate}
+		     , #{dueDate}
+		     , #{productNo})
+	</insert>
+	
+	<select id="usedCouponList" parameterType="boCoupon" resultMap="boCouponResultMap">
+		SELECT U.ORDER_NO
+            , U.COUPON_NO
+            , COUPON_NAME
+            , PRODUCT_NO
+            , PRODUCT_NAME
+            , TO_CHAR(ORDER_DATE, 'YYYY-MM-DD') AS "ORDER_DATE"
+            , ORDER_PRICE
+            , COUPON_PRICE
+            , PAYMENT_BILL
+		FROM KEYBOARDER_USE U
+		JOIN ORDERS O ON (U.ORDER_NO = O.ORDER_NO)
+		JOIN COUPON_KEYBOARDER K ON (K.COUPON_NO = U.COUPON_NO)
+		JOIN PRODUCT PR ON (PR.PRODUCT_NO = K.PRODUCT_NO)
+		JOIN PAYMENT P ON (P.ORDER_NO = O.ORDER_NO)
+		<if test="startDate != null">
+			WHERE ORDER_DATE BETWEEN #{startDate} AND #{endDate}
+		</if>
+		ORDER BY ORDER_DATE DESC
+	</select>
+	
+	<select id="selectCoupon" parameterType="string" resultMap="boCouponResultMap">
+		SELECT COUPON_NO
+			 , COUPON_NAME
+			 , COUPON_PRICE
+			 , TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS "CREATE_DATE"
+			 , TO_CHAR(DUE_DATE, 'YYYY-MM-DD') AS "DUE_DATE"
+			 , SELLER_NAME
+		     , PRODUCT_NAME
+		FROM COUPON_KEYBOARDER K
+		JOIN PRODUCT P ON (K.PRODUCT_NO = P.PRODUCT_NO)
+		JOIN SELLER S ON (S.SELLER_NO = P.SELLER_NO)
+		WHERE COUPON_NO = #{couponNo}
+	</select>
+
+	<update id="updateCoupon" parameterType="boCoupon">
+		UPDATE COUPON_KEYBOARDER
+		SET COUPON_NAME = #{couponName}
+		  , COUPON_PRICE = #{couponPrice}
+		WHERE COUPON_NO = #{couponNo}
+	</update>
+
+</mapper>

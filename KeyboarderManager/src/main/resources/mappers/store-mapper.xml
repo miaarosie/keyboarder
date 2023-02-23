@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<mapper namespace="storeMapper">
+
+	<resultMap id="storeResultSet" type="store">
+		<result column="SELLER_NO" property="sellerNo" />
+		<result column="SELLER_NAME" property="sellerName" />
+		<result column="REP_NAME" property="repName" />
+		<result column="SELLER_ID" property="sellerId" />
+		<result column="SELLER_PWD" property="sellerPwd" />
+		<result column="SELLER_EMAIL" property="sellerEmail" />
+		<result column="SELLER_PHONE" property="sellerPhone" />
+		<result column="CORP_NO" property="corpNo" />
+		<result column="ACCOUNT_NO" property="accountNo" />
+		<result column="JOIN_DATE" property="joinDate" />
+		<result column="LOCATION" property="location" />
+		<result column="SELLER_STATUS" property="sellerStatus" />
+		<result column="IDENTIFY_STATUS" property="identifyStatus" />
+		<result column="LOGO_ATTACHMENT" property="logoAttachment" />
+	</resultMap>
+
+	<select id="selectStoreList" resultMap="storeResultSet">
+		SELECT SELLER_NO
+			 , SELLER_NAME
+			 , SELLER_ID
+			 , CORP_NO
+			 , SELLER_STATUS
+			 , TO_CHAR(JOIN_DATE, 'YYYY-MM-DD') AS "JOIN_DATE"
+			 , IDENTIFY_STATUS
+			 , ACCOUNT_NO
+		FROM SELLER
+		ORDER BY SELLER_NO
+	</select>
+	
+	<select id="selectStore" parameterType="store" resultMap="storeResultSet">
+		SELECT SELLER_NO
+			 , SELLER_NAME
+			 , CORP_NO
+			 , REP_NAME
+			 , LOCATION
+			 , SELLER_ID
+			 , TO_CHAR(JOIN_DATE, 'YYYY-MM-DD') AS "JOIN_DATE"
+			 , IDENTIFY_STATUS
+			 , ACCOUNT_NO
+			 , SELLER_PHONE
+			 , SELLER_EMAIL
+			 , LOGO_ATTACHMENT
+		FROM SELLER
+		WHERE SELLER_NO = #{sellerNo}
+	</select>
+	
+	<update id="updateStore" parameterType="store">
+		UPDATE SELLER
+		SET REP_NAME = #{repName}
+		  , LOCATION = #{location}
+		  , ACCOUNT_NO = #{accountNo}
+		  , SELLER_PHONE = #{sellerPhone}
+		  , SELLER_EMAIL = #{sellerEmail}
+		WHERE SELLER_NO = #{sellerNo}
+	</update>
+	
+	<update id="deleteStore" parameterType="store">
+		UPDATE SELLER
+		SET SELLER_STATUS = 'N'
+		WHERE SELLER_NO = #{sellerNo}
+	</update>
+	
+	<update id="identifyStore" parameterType="store">
+		UPDATE SELLER
+		SET IDENTIFY_STATUS = 'Y'
+		WHERE SELLER_NO = #{sellerNo}
+	</update>
+	
+	<update id="updateStoreAccount" parameterType="store">
+		UPDATE SELLER
+		SET ACCOUNT_NO = #{accountNo}
+		WHERE SELLER_NO = #{sellerNo}
+	</update>
+	
+</mapper>

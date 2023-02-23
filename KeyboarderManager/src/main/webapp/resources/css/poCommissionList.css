@@ -1,0 +1,88 @@
+@charset "UTF-8";
+
+/* -------------- PO 수수료 내역 조회 CSS 설정 ------------------ */
+.content {
+    height : 780px;
+}
+
+#selectOption{
+    /*border : 1px solid black;*/
+    /* margin : 0px 10px 10px 10px; */
+    width : 95%;
+    margin: auto;
+    padding : 10px 30px 10px 30px;
+    height : 120px;
+}
+
+#option_table {
+    width : 100%;
+    height : 100%;
+}
+
+#option_table th{
+    padding-right : 30px;
+}
+
+#option_table input[type=date] {
+    width : 180px;
+    height : 60%;
+}
+
+#hr_td {
+    padding : 0px 20px 0px 20px;
+}
+
+#hr_td>hr {
+    margin-top : 5px;
+    margin-bottom: 5px;
+}
+
+#option_btns>input {
+    width : 100px;
+    border : 1px solid black;
+    text-align: center;
+    font-weight: bold;
+}
+
+#search_btn {
+    background-color: #323232;
+    color : white;
+}
+
+#reset_btn {
+    background-color: white;
+    color : black;
+}
+
+#allCommission_result{
+	width : 95%;
+	margin: auto;
+    height : 600px;
+    padding : 10px 10px 10px 10px;
+}
+
+#result_div {
+    width : 100%;
+    height : 40px;
+    margin: 10px 10px;
+}
+
+#allCommission_result>hr {
+    margin-top : 5px;
+    margin-bottom: 5px;
+}
+
+#table_div{
+    height : 90%;
+}
+
+#result_table{
+    text-align : center;
+    width:100%;
+    /*height:500px;*/
+}
+
+#result_table>thead {
+    background-color: lightgray;
+    height : 10%;
+}
